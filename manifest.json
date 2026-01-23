@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "YouTube Audio Plus",
+  "version": "1.0.0",
+  "description": "Enhance YouTube audio experience with equalizer and sound settings",
+  "icons": {
+    "16": "YouTube-Audio-Plus-16.png",
+    "48": "YouTube-Audio-Plus-48.png",
+    "128": "YouTube-Audio-Plus-128.png"
+  },
+  "action": {
+    "default_popup": "index.html",
+    "default_icon": {
+      "16": "YouTube-Audio-Plus-16.png",
+      "48": "YouTube-Audio-Plus-48.png",
+      "128": "YouTube-Audio-Plus-128.png"
+    }
+  },
+  "permissions": ["storage", "scripting"],
+  "host_permissions": ["*://*.youtube.com/*"],
+  "content_scripts": [
+    {
+      "matches": ["*://*.youtube.com/*"],
+      "js": ["src/content/index.tsx"],
+      "run_at": "document_end"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["src/injected/index.ts"],
+      "matches": ["*://*.youtube.com/*"]
+    }
+  ]
+}
