@@ -23,12 +23,12 @@
       "matches": ["*://*.youtube.com/*"],
       "js": ["src/content/index.tsx"],
       "run_at": "document_end"
-    }
-  ],
-  "web_accessible_resources": [
+    },
     {
-      "resources": ["src/injected/index.ts"],
-      "matches": ["*://*.youtube.com/*"]
+      "matches": ["*://*.youtube.com/*"],
+      "js": ["src/injected/index.ts"],
+      "run_at": "document_start",
+      "world": "MAIN"
     }
   ]
 }
