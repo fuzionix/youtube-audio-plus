@@ -2,7 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  font-family: Roboto, Arial, sans-serif;
+}
+
 body {
   margin: 0;
-  font-family: sans-serif;
+  font-family: Roboto, Arial, sans-serif;
 }
