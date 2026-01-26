@@ -32,6 +32,7 @@ export default {
           sliderThumb: 'var(--yt-spec-static-brand-white, #fff)',
           
           shadow: 'rgba(0,0,0,0.6)',
+          background: 'rgba(0,0,0,0.6)',
         }
       },
       fontFamily: {

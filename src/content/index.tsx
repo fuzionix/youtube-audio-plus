@@ -1,8 +1,9 @@
 import React from 'react';
-import { createRoot, type Root } from 'react-dom/client';
+import { createRoot } from 'react-dom/client';
 import injectedScriptPath from '@/injected/index.ts?script';
 import styles from '@/index.css?inline';
 import AudioControl from '@/components/AudioControl.tsx';
+import AudioPanelOverlay from '@/components/AudioPanelOverlay.tsx';
 
 console.log('[YouTube Audio Plus] Content script loaded');
 
@@ -17,61 +18,94 @@ const injectEngine = () => {
   (document.head || document.documentElement).appendChild(script);
 };
 
-injectEngine();
-
-// 2. UI Injection Logic
-let reactRoot: Root | null = null;
-
-const injectUI = () => {
-  // Target the left controls (Play, Next, Volume)
-  const leftControls = document.querySelector('.ytp-left-controls');
-  
-  // Prevent duplicate injection
-  if (!leftControls || leftControls.querySelector('#yt-audio-plus-container')) return;
+// 2. Helper to Create Shadow Root with Styles
+const createShadowRoot = (containerId: string, parent: Element) => {
+  if (parent.querySelector(`#${containerId}`)) return null;
 
   const container = document.createElement('div');
-  container.id = 'yt-audio-plus-container';
-  container.style.display = 'inline-flex';
-  container.style.alignItems = 'center';
+  container.id = containerId;
   
-  // Insert after the volume area (usually appending is safer for layout)
-  // To place it exactly "next to sound button", append it to left-controls.
-  leftControls.appendChild(container);
+  if (containerId === 'yt-audio-plus-panel') {
+    container.className = 'ytp-audio-plus-layer';
+    container.style.position = 'absolute';
+    container.style.top = '0';
+    container.style.left = '0';
+    container.style.width = '100%';
+    container.style.height = '100%';
+    container.style.pointerEvents = 'none';
+    container.style.zIndex = '60';
+    parent.appendChild(container);
+  } else {
+    container.style.display = 'inline-flex';
+    container.style.alignItems = 'center';
+    parent.appendChild(container);
+  }
 
-  // Create Shadow DOM to isolate styles
   const shadow = container.attachShadow({ mode: 'open' });
-
-  // Inject Tailwind Styles into Shadow DOM
   const styleSheet = document.createElement('style');
   styleSheet.textContent = styles;
   shadow.appendChild(styleSheet);
 
-  // Mount Point inside Shadow DOM
+  return shadow;
+};
+
+// 3. Inject Control Button
+const injectButton = () => {
+  const leftControls = document.querySelector('.ytp-left-controls');
+  if (!leftControls) return;
+
+  const shadow = createShadowRoot('yt-audio-plus-button', leftControls);
+  if (!shadow) return;
+
   const mountPoint = document.createElement('div');
-  mountPoint.className = 'flex items-center h-full relative';
+  mountPoint.className = 'flex items-center h-full';
   shadow.appendChild(mountPoint);
 
-  reactRoot = createRoot(mountPoint);
-  reactRoot.render(
+  createRoot(mountPoint).render(
     <React.StrictMode>
       <AudioControl />
     </React.StrictMode>
   );
 };
 
-// 3. Observer to handle navigation and dynamic loading
+// 4. Inject Panel Overlay
+const injectPanel = () => {
+  const player = document.querySelector('#movie_player'); 
+  if (!player) return;
+
+  const shadow = createShadowRoot('yt-audio-plus-panel', player);
+  if (!shadow) return;
+
+  const mountPoint = document.createElement('div');
+
+  // Pointer events auto to re-enable clicking on the panel itself
+  mountPoint.className = 'w-full h-full'; 
+  shadow.appendChild(mountPoint);
+
+  createRoot(mountPoint).render(
+    <React.StrictMode>
+      <AudioPanelOverlay />
+    </React.StrictMode>
+  );
+};
+
 const observer = new MutationObserver(() => {
-  if (!document.querySelector('#yt-audio-plus-container')) {
-    injectUI();
-  }
+  if (!document.querySelector('#yt-audio-plus-button')) injectButton();
+  if (!document.querySelector('#yt-audio-plus-panel')) injectPanel();
 });
 
 const startObserving = () => {
-  const target = document.body; // Broad observer to catch SPA navigation
+  const target = document.body;
   if (target) {
     observer.observe(target, { childList: true, subtree: true });
   }
 };
 
+const init = () => {
+  injectEngine();
+  injectButton();
+  injectPanel();
+};
+
 startObserving();
-injectUI();
+init();
