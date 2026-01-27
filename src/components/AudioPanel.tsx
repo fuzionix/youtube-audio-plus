@@ -24,7 +24,7 @@ const AudioSlider = ({
   const percentage = ((value - min) / (max - min)) * 100;
 
   return (
-    <div className="group flex items-center justify-between px-4 py-4 rounded-lg hover:bg-yt-hover transition-colors cursor-pointer select-none">
+    <div className="group flex items-center justify-between px-4 py-4 rounded-[8px] hover:bg-yt-hover transition-colors cursor-pointer select-none">
       {/* Icon and Label */}
       <div className="flex items-center min-w-[120px] gap-2">
         <Icon size={24} className="text-yt-text pl-2 pr-8" strokeWidth={2} />
@@ -88,7 +88,7 @@ const AudioPanel = () => {
   }, [bass, treble, gain]);
 
   return (
-    <div className="w-[360px] min-h-40 p-2 bg-yt-background backdrop-blur-lg rounded-xl overflow-hidden text-yt-text font-sans">
+    <div className="w-[360px] min-h-40 p-4 bg-yt-background backdrop-blur-lg rounded-[12px] overflow-hidden text-yt-text font-sans">
       <div className="flex flex-col">
         <AudioSlider 
           icon={Speaker} 
