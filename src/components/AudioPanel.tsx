@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Speaker, MicVocal, Volume2 } from 'lucide-react';
+import { Speaker, MicVocal } from 'lucide-react';
 
 interface AudioSliderProps {
   icon: React.ElementType;
@@ -78,17 +78,16 @@ const AudioSlider = ({
 const AudioPanel = () => {
   const [bass, setBass] = useState(0);
   const [treble, setTreble] = useState(0);
-  const [gain, setGain] = useState(1);
 
   useEffect(() => {
     window.postMessage({ 
       type: 'YT_AUDIO_UPDATE', 
-      payload: { bass, treble, gain } 
+      payload: { bass, treble } 
     }, '*');
-  }, [bass, treble, gain]);
+  }, [bass, treble]);
 
   return (
-    <div className="w-[360px] min-h-40 p-4 bg-yt-background backdrop-blur-lg rounded-[12px] overflow-hidden text-yt-text font-sans">
+    <div className="w-[380px] min-h-40 p-2.5 bg-yt-background backdrop-blur-lg border-[0.5px] border-solid border-yt-borderLight rounded-[12px] overflow-hidden text-yt-text font-sans">
       <div className="flex flex-col">
         <AudioSlider 
           icon={Speaker} 
@@ -98,7 +97,7 @@ const AudioPanel = () => {
           max={10} 
           onChange={setBass}
           formatValue={(v) => (v > 0 ? `+${v.toFixed(0)}` : v.toFixed(0))}
-          description="Low frequencies"
+          description="Boost deep sounds"
         />
         
         <AudioSlider 
@@ -109,18 +108,7 @@ const AudioPanel = () => {
           max={10} 
           onChange={setTreble}
           formatValue={(v) => (v > 0 ? `+${v.toFixed(0)}` : v.toFixed(0))}
-          description="High frequencies"
-        />
-
-        <AudioSlider 
-          icon={Volume2} 
-          label="Boost" 
-          value={gain} 
-          min={1} 
-          max={3} 
-          onChange={setGain}
-          formatValue={(v) => `${((v - 1) * 50).toFixed(0)}%`}
-          description="Volume amplifier"
+          description="Enhance crisp highs"
         />
       </div>
     </div>
