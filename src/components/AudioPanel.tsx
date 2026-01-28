@@ -1,5 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { Speaker, MicVocal } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import {
+  Speaker,
+  MicVocal,
+  ChevronLeft,
+  RotateCcw,
+  SlidersHorizontal,
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import EqBand from "./EqBand";
 
 interface AudioSliderProps {
   icon: React.ElementType;
@@ -12,12 +20,12 @@ interface AudioSliderProps {
   description?: string;
 }
 
-const AudioSlider = ({ 
-  icon: Icon, 
-  label, 
-  value, 
-  min, 
-  max, 
+const AudioSlider = ({
+  icon: Icon,
+  label,
+  value,
+  min,
+  max,
   onChange,
   description,
 }: AudioSliderProps) => {
@@ -52,21 +60,21 @@ const AudioSlider = ({
             className="absolute w-full h-full opacity-0 z-10 cursor-pointer"
             aria-label={label}
           />
-          
+
           {/* Visual Track Background */}
           <div className="absolute w-full h-[4px] bg-yt-sliderTrack rounded-full overflow-hidden">
             {/* Filled portion */}
-            <div 
+            <div
               className="h-full bg-white transition-all duration-75 ease-out"
               style={{ width: `${percentage}%` }}
             />
           </div>
 
           {/* Visual Thumb (Circle) */}
-          <div 
+          <div
             className="absolute h-6 w-6 bg-white rounded-full pointer-events-none transition-transform duration-100 ease-out group-hover:scale-100 scale-0"
-            style={{ 
-              left: `calc(${percentage}% - 7.5px)` 
+            style={{
+              left: `calc(${percentage}% - 7.5px)`,
             }}
           />
         </div>
@@ -76,40 +84,147 @@ const AudioSlider = ({
 };
 
 const AudioPanel = () => {
+  const [view, setView] = useState<"basic" | "equalizer">("basic");
+
+  // Audio State
   const [bass, setBass] = useState(0);
   const [treble, setTreble] = useState(0);
+  const [eqValues, setEqValues] = useState<number[]>(new Array(10).fill(0));
+
+  const frequencies = [
+    "32",
+    "64",
+    "125",
+    "250",
+    "500",
+    "1k",
+    "2k",
+    "4k",
+    "8k",
+    "16k",
+  ];
 
   useEffect(() => {
-    window.postMessage({ 
-      type: 'YT_AUDIO_UPDATE', 
-      payload: { bass, treble } 
-    }, '*');
-  }, [bass, treble]);
+    window.postMessage(
+      {
+        type: "YT_AUDIO_UPDATE",
+        payload: { bass, treble, eqValues },
+      },
+      "*",
+    );
+  }, [bass, treble, eqValues]);
+
+  const handleReset = () => {
+    if (view === "basic") {
+      setBass(0);
+      setTreble(0);
+    } else {
+      setEqValues(new Array(10).fill(0));
+    }
+  };
+
+  const handleEqChange = (index: number, val: number) => {
+    const newValues = [...eqValues];
+    newValues[index] = val;
+    setEqValues(newValues);
+  };
 
   return (
     <div className="w-[380px] min-h-40 p-2.5 bg-yt-background backdrop-blur-lg border-[0.5px] border-solid border-yt-borderLight rounded-[12px] overflow-hidden text-yt-text font-sans">
-      <div className="flex flex-col">
-        <AudioSlider 
-          icon={Speaker} 
-          label="Bass" 
-          value={bass} 
-          min={-10} 
-          max={10} 
-          onChange={setBass}
-          formatValue={(v) => (v > 0 ? `+${v.toFixed(0)}` : v.toFixed(0))}
-          description="Boost deep sounds"
-        />
-        
-        <AudioSlider 
-          icon={MicVocal} 
-          label="Treble" 
-          value={treble} 
-          min={-10} 
-          max={10} 
-          onChange={setTreble}
-          formatValue={(v) => (v > 0 ? `+${v.toFixed(0)}` : v.toFixed(0))}
-          description="Enhance crisp highs"
-        />
+      {/* Header */}
+      <div className="flex items-center justify-between p-2.5 border-b border-yt-borderLight/50">
+        <div className="flex items-center gap-2">
+          {view === "equalizer" && (
+            <button
+              onClick={() => setView("basic")}
+              className="font-medium bg-transparent -ml-1 mb-[1px] border-none outline-none p-0 cursor-pointer text-yt-textSecondary hover:text-yt-text transition-colors"
+              aria-label="Back"
+            >
+              <ChevronLeft size={16} strokeWidth={2} className="inline-block" />
+            </button>
+          )}
+        </div>
+        <button
+          onClick={handleReset}
+          className="font-medium bg-transparent -mr-1 mb-[1px] border-none outline-none p-0 cursor-pointer text-yt-textSecondary hover:text-yt-text transition-colors"
+          aria-label="Reset Audio Settings"
+        >
+          <RotateCcw size={16} strokeWidth={2} className="inline-block" />
+        </button>
+      </div>
+
+      {/* Seperate Line */}
+      <div className="w-[97.5%] h-[0.5px] m-auto bg-yt-borderLight mb-2" />
+
+      {/* Content Area */}
+      <div className="relative overflow-hidden">
+        <AnimatePresence mode="wait" initial={false}>
+          {view === "basic" ? (
+            <motion.div
+              key="basic"
+              initial={{ x: -50, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: -50, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="flex flex-col"
+            >
+              <AudioSlider
+                icon={Speaker}
+                label="Bass"
+                value={bass}
+                min={-10}
+                max={10}
+                onChange={setBass}
+                formatValue={(v) => (v > 0 ? `+${v.toFixed(0)}` : v.toFixed(0))}
+                description="Boost deep sounds"
+              />
+
+              <AudioSlider
+                icon={MicVocal}
+                label="Treble"
+                value={treble}
+                min={-10}
+                max={10}
+                onChange={setTreble}
+                formatValue={(v) => (v > 0 ? `+${v.toFixed(0)}` : v.toFixed(0))}
+                description="Enhance crisp highs"
+              />
+
+              <div>
+                <button
+                  onClick={() => setView("equalizer")}
+                  className="w-full flex items-center justify-center gap-4 mt-2.5 py-3 rounded-[8px] text-yt-text bg-transparent hover:bg-yt-hover transition-colors border border-solid border-yt-borderLight"
+                >
+                  <SlidersHorizontal
+                    size={16}
+                    strokeWidth={2}
+                  />
+                  <span className="inline-block">Equalizer</span>
+                </button>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="equalizer"
+              initial={{ x: 50, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: 50, opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              className="p-4 min-h-[120px]"
+            >
+              <div className="flex justify-between items-end h-full">
+                {frequencies.map((freq, i) => (
+                  <EqBand
+                    key={freq}
+                    frequency={freq}
+                    value={eqValues[i]}
+                    onChange={(val) => handleEqChange(i, val)}
+                  />
+                ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

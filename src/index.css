@@ -12,3 +12,10 @@ body {
   font-size: 10px;
   font-family: Roboto, Arial, sans-serif;
 }
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+}
