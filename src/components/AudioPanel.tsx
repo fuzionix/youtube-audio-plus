@@ -1,13 +1,19 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Speaker,
   MicVocal,
   ChevronLeft,
   RotateCcw,
   SlidersHorizontal,
+  KeyboardMusic,
+  Headphones
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import EqBand from "./EqBand";
+
+const BASS_INDICES = [0, 1, 2];
+const TREBLE_INDICES = [7, 8, 9];
+const FREQUENCIES = ["32", "64", "125", "250", "500", "1k", "2k", "4k", "8k", "16k"];
 
 interface AudioSliderProps {
   icon: React.ElementType;
@@ -29,7 +35,7 @@ const AudioSlider = ({
   onChange,
   description,
 }: AudioSliderProps) => {
-  const percentage = ((value - min) / (max - min)) * 100;
+  const percentage = Math.min(100, Math.max(0, ((value - min) / (max - min)) * 100));
 
   return (
     <div className="group flex items-center justify-between px-4 py-4 rounded-[8px] hover:bg-yt-hover transition-colors cursor-pointer select-none">
@@ -85,24 +91,16 @@ const AudioSlider = ({
 
 const AudioPanel = () => {
   const [view, setView] = useState<"basic" | "equalizer">("basic");
-
-  // Audio State
-  const [bass, setBass] = useState(0);
-  const [treble, setTreble] = useState(0);
   const [eqValues, setEqValues] = useState<number[]>(new Array(10).fill(0));
 
-  const frequencies = [
-    "32",
-    "64",
-    "125",
-    "250",
-    "500",
-    "1k",
-    "2k",
-    "4k",
-    "8k",
-    "16k",
-  ];
+  const calculateAverage = (indices: number[]) => {
+    const sum = indices.reduce((acc, index) => acc + eqValues[index], 0);
+    return sum / indices.length;
+  };
+
+  // Memoize these to prevent jitter during renders, though cheap to calculate
+  const bass = useMemo(() => calculateAverage(BASS_INDICES), [eqValues]);
+  const treble = useMemo(() => calculateAverage(TREBLE_INDICES), [eqValues]);
 
   useEffect(() => {
     window.postMessage(
@@ -115,17 +113,22 @@ const AudioPanel = () => {
   }, [bass, treble, eqValues]);
 
   const handleReset = () => {
-    if (view === "basic") {
-      setBass(0);
-      setTreble(0);
-    } else {
-      setEqValues(new Array(10).fill(0));
-    }
+    setEqValues(new Array(10).fill(0));
   };
 
   const handleEqChange = (index: number, val: number) => {
     const newValues = [...eqValues];
     newValues[index] = val;
+    setEqValues(newValues);
+  };
+
+  const handleGroupChange = (indices: number[], newValue: number) => {
+    const newValues = [...eqValues];
+    
+    indices.forEach((index) => {
+      newValues[index] = newValue;
+    });
+
     setEqValues(newValues);
   };
 
@@ -153,7 +156,7 @@ const AudioPanel = () => {
         </button>
       </div>
 
-      {/* Seperate Line */}
+      {/* Separator Line */}
       <div className="w-[97.5%] h-[0.5px] m-auto bg-yt-borderLight mb-2" />
 
       {/* Content Area */}
@@ -165,7 +168,7 @@ const AudioPanel = () => {
               initial={{ x: -50, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: -50, opacity: 0 }}
-              transition={{ duration: 0.2 }}
+              transition={{ duration: 0.1, ease: "easeOut" }}
               className="flex flex-col"
             >
               <AudioSlider
@@ -174,7 +177,7 @@ const AudioPanel = () => {
                 value={bass}
                 min={-10}
                 max={10}
-                onChange={setBass}
+                onChange={(val) => handleGroupChange(BASS_INDICES, val)}
                 formatValue={(v) => (v > 0 ? `+${v.toFixed(0)}` : v.toFixed(0))}
                 description="Boost deep sounds"
               />
@@ -185,7 +188,7 @@ const AudioPanel = () => {
                 value={treble}
                 min={-10}
                 max={10}
-                onChange={setTreble}
+                onChange={(val) => handleGroupChange(TREBLE_INDICES, val)}
                 formatValue={(v) => (v > 0 ? `+${v.toFixed(0)}` : v.toFixed(0))}
                 description="Enhance crisp highs"
               />
@@ -202,6 +205,29 @@ const AudioPanel = () => {
                   <span className="inline-block">Equalizer</span>
                 </button>
               </div>
+
+              <div className="flex mt-2.5 gap-2.5">
+                <button
+                  onClick={() => setView("equalizer")}
+                  className="w-full flex items-center justify-center gap-4 py-3 rounded-[8px] text-yt-text bg-transparent hover:bg-yt-hover transition-colors border border-solid border-yt-borderLight"
+                >
+                  <KeyboardMusic
+                    size={16}
+                    strokeWidth={2}
+                  />
+                  <span className="inline-block">Advanced</span>
+                </button>
+                <button
+                  onClick={() => setView("equalizer")}
+                  className="w-full flex items-center justify-center gap-4 py-3 rounded-[8px] text-yt-text bg-transparent hover:bg-yt-hover transition-colors border border-solid border-yt-borderLight"
+                >
+                  <Headphones
+                    size={16}
+                    strokeWidth={2}
+                  />
+                  <span className="inline-block">Stereo</span>
+                </button>
+              </div>
             </motion.div>
           ) : (
             <motion.div
@@ -209,11 +235,11 @@ const AudioPanel = () => {
               initial={{ x: 50, opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: 50, opacity: 0 }}
-              transition={{ duration: 0.2 }}
+              transition={{ duration: 0.1, ease: "easeOut" }}
               className="p-4 min-h-[120px]"
             >
               <div className="flex justify-between items-end h-full">
-                {frequencies.map((freq, i) => (
+                {FREQUENCIES.map((freq, i) => (
                   <EqBand
                     key={freq}
                     frequency={freq}
