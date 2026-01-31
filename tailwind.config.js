@@ -33,6 +33,9 @@ export default {
           
           shadow: 'rgba(0,0,0,0.6)',
           background: 'rgba(0,0,0,0.6)',
+          
+          overlayBackground: 'var(--yt-spec-overlay-background-medium-light, rgba(0,0,0,0.3))',
+          overlayButtonSecondary: 'var(--yt-spec-overlay-button-secondary, rgba(0,0,0,0.1))',
         }
       },
       fontFamily: {

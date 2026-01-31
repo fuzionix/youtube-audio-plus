@@ -8,19 +8,21 @@ const AudioControl = () => {
   };
 
   return (
-    <button
-      onClick={handleClick}
-      className="ytp-button w-[48px] h-full border-none cursor-pointer bg-transparent flex items-center justify-center transition-opacity focus:outline-none"
-      aria-label="Audio Settings"
-      title="Audio Settings"
-      style={{ verticalAlign: 'top' }}
-    >
-      <AudioLines 
-        size={24} 
-        className="text-white fill-current" 
-        strokeWidth={2}
-      />
-    </button>
+    <div className="flex items-center justify-center m-2 w-16 h-16 rounded-full bg-yt-overlayBackground">
+      <button
+        onClick={handleClick}
+        className="flex items-center justify-center p-1.5 rounded-full border-none bg-transparent cursor-pointer transition-opacity hover:bg-yt-overlayButtonSecondary focus:outline-none"
+        aria-label="Audio Settings"
+        title="Audio Settings"
+        style={{ verticalAlign: 'top' }}
+      >
+        <AudioLines 
+          size={24} 
+          className="text-white fill-current" 
+          strokeWidth={2}
+        />
+      </button>
+    </div>
   );
 };
 
