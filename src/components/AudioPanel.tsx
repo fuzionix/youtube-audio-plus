@@ -17,9 +17,10 @@ const TREBLE_INDICES = [7, 8, 9];
 const FREQUENCIES = ["32", "64", "125", "250", "500", "1k", "2k", "4k", "8k", "16k"];
 
 const AudioPanel = () => {
+  const isExtensionEnv = typeof chrome !== "undefined" && !!chrome.storage;
   const [view, setView] = useState<"basic" | "equalizer">("basic");
   const [eqValues, setEqValues] = useState<number[]>(new Array(10).fill(0));
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(!isExtensionEnv);
 
   // Load settings from storage on mount
   useEffect(() => {
@@ -34,7 +35,7 @@ const AudioPanel = () => {
     }
   }, []);
 
-  const calculateAverage = (indices: number[]) => {
+  const calculateAverage = (indices: number[]): number => {
     const sum = indices.reduce((acc, index) => acc + eqValues[index], 0);
     return sum / indices.length;
   };

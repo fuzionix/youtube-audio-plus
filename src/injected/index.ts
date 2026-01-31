@@ -16,10 +16,10 @@ window.addEventListener('message', (event) => {
     if (Array.isArray(eqValues)) {
       eqValues.forEach((gain: number, index: number) => {
         engine.setFilterGain(index, gain);
-      })
+      });
     }
   }
-})
+});
 
 // 2. Observer to attach to existing and new videos
 const attachToVideos = () => {
@@ -44,4 +44,8 @@ const observer = new MutationObserver((mutations) => {
 
 observer.observe(document.body, { childList: true, subtree: true });
 
+// Initial attach
 attachToVideos();
+
+// 3. Notify Content Script that we are ready to receive settings
+window.postMessage({ type: 'YT_AUDIO_PLUS_READY' }, '*');

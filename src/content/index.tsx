@@ -7,6 +7,37 @@ import AudioPanelOverlay from '@/components/AudioPanelOverlay.tsx';
 
 console.log('[YouTube Audio Plus] Content script loaded');
 
+const syncSettingsToInjectedScript = async () => {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await chrome.storage.local.get(['ytAudioSettings']) as any;
+    if (result.ytAudioSettings && Array.isArray(result.ytAudioSettings.eqValues)) {
+      console.log('[YouTube Audio Plus] Syncing initial settings');
+      window.postMessage({
+        type: 'YT_AUDIO_UPDATE',
+        payload: { eqValues: result.ytAudioSettings.eqValues }
+      }, '*');
+    }
+  } catch (e) {
+    console.error('[YouTube Audio Plus] Failed to sync settings:', e);
+  }
+};
+
+// Listen for the Injected Script to say it's ready
+window.addEventListener('message', (event) => {
+  if (event.source !== window) return;
+  if (event.data?.type === 'YT_AUDIO_PLUS_READY') {
+    syncSettingsToInjectedScript();
+  }
+});
+
+// Listen for storage changes (e.g., if changed in another tab)
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === 'local' && changes.ytAudioSettings) {
+    syncSettingsToInjectedScript();
+  }
+});
+
 // 1. Inject the Main World script
 const injectEngine = () => {
   if (document.getElementById('yt-audio-plus-engine')) return;
@@ -105,6 +136,7 @@ const init = () => {
   injectEngine();
   injectButton();
   injectPanel();
+  syncSettingsToInjectedScript();
 };
 
 startObserving();
