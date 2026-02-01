@@ -17,6 +17,13 @@ const AudioPanelOverlay = () => {
       
       const path = event.composedPath();
       
+      // Check if click is on the button or outside the panel
+      const isButtonClick = (path as Element[]).some(el => 
+        el.id === 'yt-audio-plus-button' || el.closest?.('#yt-audio-plus-button')
+      );
+      
+      if (isButtonClick) return;
+      
       if (panelRef.current && !path.includes(panelRef.current)) {
         setIsOpen(false);
       }
@@ -36,10 +43,14 @@ const AudioPanelOverlay = () => {
         {isOpen && (
           <motion.div
             ref={panelRef}
-            className="absolute bottom-[62px] left-[12px] pointer-events-auto z-50"
+            className="absolute bottom-[62px] left-[12px] bg-yt-background border-[0.5px] border-solid border-yt-borderLight backdrop-blur-lg rounded-[12px] pointer-events-auto z-50"
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => e.stopPropagation()}
+            initial={{ opacity: 0}}
+            animate={{ opacity: 1}}
+            exit={{ opacity: 0}}
+            transition={{ duration: 0.1 }}
           >
             <AudioPanel />
           </motion.div>

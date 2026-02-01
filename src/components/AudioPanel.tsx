@@ -84,7 +84,7 @@ const AudioPanel = () => {
   if (!isLoaded) return null; // Prevent flash of default state
 
   return (
-    <div className="w-[380px] min-h-40 p-2.5 bg-yt-background backdrop-blur-lg border-[0.5px] border-solid border-yt-borderLight rounded-[12px] overflow-hidden text-yt-text font-sans">
+    <div className="w-[380px] min-h-40 p-2.5 overflow-hidden text-yt-text font-sans">
       {/* Header */}
       <div className="flex items-center justify-between p-2.5 border-b border-yt-borderLight/50">
         <div className="flex items-center gap-2">
@@ -152,6 +152,7 @@ const AudioPanel = () => {
                   <SlidersHorizontal
                     size={16}
                     strokeWidth={2}
+                    className="-rotate-90"
                   />
                   <span className="inline-block">Equalizer</span>
                 </button>
