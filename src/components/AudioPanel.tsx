@@ -12,9 +12,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import AudioSlider from "./AudioSlider";
 import EqBand from "./EqBand";
 
-const BASS_INDICES = [0, 1, 2];
-const TREBLE_INDICES = [7, 8, 9];
 const FREQUENCIES = ["32", "64", "125", "250", "500", "1k", "2k", "4k", "8k", "16k"];
+
+const BASS_WEIGHTS =   [1.0, 1.0, 0.8, 0.3, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+const TREBLE_WEIGHTS = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.3, 0.8, 1.0, 1.0];
 
 const AudioPanel = () => {
   const isExtensionEnv = typeof chrome !== "undefined" && !!chrome.storage;
@@ -35,14 +36,11 @@ const AudioPanel = () => {
     }
   }, []);
 
-  const calculateAverage = (indices: number[]): number => {
-    const sum = indices.reduce((acc, index) => acc + eqValues[index], 0);
-    return sum / indices.length;
-  };
-
-  // Memoize these to prevent jitter during renders, though cheap to calculate
-  const bass = useMemo(() => calculateAverage(BASS_INDICES), [eqValues]);
-  const treble = useMemo(() => calculateAverage(TREBLE_INDICES), [eqValues]);
+  // Determine the current "Bass" level based on the peak bass frequency (64Hz / Index 1)
+  const bassLevel = useMemo(() => eqValues[1], [eqValues]);
+  
+  // Determine the current "Treble" level based on the peak air frequency (16kHz / Index 9)
+  const trebleLevel = useMemo(() => eqValues[9], [eqValues]);
 
   // Sync changes to Injected Script (Audio Engine) AND Storage
   useEffect(() => {
@@ -73,10 +71,22 @@ const AudioPanel = () => {
     setEqValues(newValues);
   };
 
-  const handleGroupChange = (indices: number[], newValue: number) => {
+  const handleBassChange = (val: number) => {
     const newValues = [...eqValues];
-    indices.forEach((index) => {
-      newValues[index] = newValue;
+    BASS_WEIGHTS.forEach((weight, index) => {
+      if (weight > 0) {
+        newValues[index] = val * weight;
+      }
+    });
+    setEqValues(newValues);
+  };
+
+  const handleTrebleChange = (val: number) => {
+    const newValues = [...eqValues];
+    TREBLE_WEIGHTS.forEach((weight, index) => {
+      if (weight > 0) {
+        newValues[index] = val * weight;
+      }
     });
     setEqValues(newValues);
   };
@@ -125,10 +135,10 @@ const AudioPanel = () => {
               <AudioSlider
                 icon={Speaker}
                 label="Bass"
-                value={bass}
-                min={-10}
-                max={10}
-                onChange={(val) => handleGroupChange(BASS_INDICES, val)}
+                value={bassLevel}
+                min={-12}
+                max={12}
+                onChange={handleBassChange}
                 formatValue={(v) => (v > 0 ? `+${v.toFixed(0)}` : v.toFixed(0))}
                 description="Boost deep sounds"
               />
@@ -136,10 +146,10 @@ const AudioPanel = () => {
               <AudioSlider
                 icon={MicVocal}
                 label="Treble"
-                value={treble}
-                min={-10}
-                max={10}
-                onChange={(val) => handleGroupChange(TREBLE_INDICES, val)}
+                value={trebleLevel}
+                min={-12}
+                max={12}
+                onChange={handleTrebleChange}
                 formatValue={(v) => (v > 0 ? `+${v.toFixed(0)}` : v.toFixed(0))}
                 description="Enhance crisp highs"
               />
