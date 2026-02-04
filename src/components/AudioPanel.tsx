@@ -27,7 +27,7 @@ const AudioPanel = () => {
   useEffect(() => {
     if (typeof chrome !== "undefined" && chrome.storage) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      chrome.storage.local.get(["ytAudioSettings"], (result: any) => {
+      chrome.storage.sync.get(["ytAudioSettings"], (result: any) => {
         if (result.ytAudioSettings && Array.isArray(result.ytAudioSettings.eqValues)) {
           setEqValues(result.ytAudioSettings.eqValues);
         }
@@ -55,7 +55,7 @@ const AudioPanel = () => {
     );
 
     if (typeof chrome !== "undefined" && chrome.storage) {
-      chrome.storage.local.set({
+      chrome.storage.sync.set({
         ytAudioSettings: { eqValues }
       });
     }

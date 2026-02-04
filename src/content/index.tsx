@@ -10,7 +10,7 @@ console.log('[YouTube Audio Plus] Content script loaded');
 const syncSettingsToInjectedScript = async () => {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result = await chrome.storage.local.get(['ytAudioSettings']) as any;
+    const result = await chrome.storage.sync.get(['ytAudioSettings']) as any;
     if (result.ytAudioSettings && Array.isArray(result.ytAudioSettings.eqValues)) {
       console.log('[YouTube Audio Plus] Syncing initial settings');
       window.postMessage({
@@ -31,9 +31,9 @@ window.addEventListener('message', (event) => {
   }
 });
 
-// Listen for storage changes (e.g., if changed in another tab)
+// Listen for storage changes (e.g., if changed in another tab OR another device)
 chrome.storage.onChanged.addListener((changes, area) => {
-  if (area === 'local' && changes.ytAudioSettings) {
+  if (area === 'sync' && changes.ytAudioSettings) {
     syncSettingsToInjectedScript();
   }
 });
