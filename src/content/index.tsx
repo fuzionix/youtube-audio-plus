@@ -1,6 +1,6 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import injectedScriptPath from '@/injected/index.ts?script';
+import injectedScriptPath from '@/injected/index.ts?script&module';
 import styles from '@/index.css?inline';
 import AudioControl from '@/components/AudioControl.tsx';
 import AudioPanelOverlay from '@/components/AudioPanelOverlay.tsx';
@@ -80,9 +80,16 @@ const createShadowRoot = (containerId: string, parent: Element) => {
   return shadow;
 };
 
+const getMainPlayer = (): HTMLElement | null => {
+  return document.querySelector<HTMLElement>('#movie_player');
+};
+
 // 3. Inject Control Button
 const injectButton = () => {
-  const leftControls = document.querySelector('.ytp-left-controls');
+  const player = getMainPlayer();
+  if (!player) return;
+
+  const leftControls = player.querySelector<HTMLElement>('.ytp-left-controls');
   if (!leftControls) return;
 
   const shadow = createShadowRoot('yt-audio-plus-button', leftControls);
@@ -101,7 +108,7 @@ const injectButton = () => {
 
 // 4. Inject Panel Overlay
 const injectPanel = () => {
-  const player = document.querySelector('#movie_player'); 
+  const player = getMainPlayer();
   if (!player) return;
 
   const shadow = createShadowRoot('yt-audio-plus-panel', player);
