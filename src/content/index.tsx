@@ -55,7 +55,7 @@ const createShadowRoot = (containerId: string, parent: Element) => {
 
   const container = document.createElement('div');
   container.id = containerId;
-  
+
   if (containerId === 'yt-audio-plus-panel') {
     container.className = 'ytp-audio-plus-layer';
     container.style.position = 'absolute';
@@ -117,7 +117,7 @@ const injectPanel = () => {
   const mountPoint = document.createElement('div');
 
   // Pointer events auto to re-enable clicking on the panel itself
-  mountPoint.className = 'w-full h-full'; 
+  mountPoint.className = 'w-full h-full';
   shadow.appendChild(mountPoint);
 
   createRoot(mountPoint).render(
@@ -127,9 +127,25 @@ const injectPanel = () => {
   );
 };
 
-const observer = new MutationObserver(() => {
+// 5. Debounce mount checks to avoid excessive DOM queries
+const MOUNT_CHECK_DELAY = 150;
+let mountCheckTimer: number | undefined;
+
+const ensureMounted = () => {
   if (!document.querySelector('#yt-audio-plus-button')) injectButton();
   if (!document.querySelector('#yt-audio-plus-panel')) injectPanel();
+};
+
+const scheduleMountCheck = () => {
+  if (mountCheckTimer) clearTimeout(mountCheckTimer);
+  mountCheckTimer = window.setTimeout(ensureMounted, MOUNT_CHECK_DELAY);
+};
+
+const observer = new MutationObserver((mutations) => {
+  const hasAddedNodes = mutations.some((m) => m.addedNodes.length > 0);
+  if (!hasAddedNodes) return;
+
+  scheduleMountCheck();
 });
 
 const startObserving = () => {
