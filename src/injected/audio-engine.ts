@@ -4,6 +4,9 @@ export class AudioEngine {
   private filters: BiquadFilterNode[];
   private preamp: GainNode;
   private compressor: DynamicsCompressorNode;
+  private attachedVideos: Set<HTMLMediaElement>;
+  private boundResumeContext: () => void;
+  private boundHandleVisibilityChange: () => void;
 
   private readonly frequencies = [32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
 
@@ -14,6 +17,7 @@ export class AudioEngine {
     this.context = new AudioContextClass();
     this.sources = new WeakMap();
     this.filters = [];
+    this.attachedVideos = new Set();
 
     // 1. Create Preamp (Gain)
     this.preamp = this.context.createGain();
@@ -45,6 +49,42 @@ export class AudioEngine {
 
     this.filters[this.filters.length - 1].connect(this.compressor);
     this.compressor.connect(this.context.destination);
+
+    // 5. Defensive resume handling for suspended contexts
+    this.boundResumeContext = this.resumeContext.bind(this);
+    this.boundHandleVisibilityChange = this.handleVisibilityChange.bind(this);
+    this.setupContextResilience();
+  }
+
+  private setupContextResilience() {
+    // Tab becomes visible again
+    document.addEventListener('visibilitychange', this.boundHandleVisibilityChange);
+
+    window.addEventListener('focus', this.boundResumeContext);
+    window.addEventListener('pointerdown', this.boundResumeContext);
+    window.addEventListener('keydown', this.boundResumeContext);
+
+    // React to native AudioContext state changes (e.g. OS-level interruptions)
+    this.context.addEventListener('statechange', () => {
+      console.log('[YouTube Audio Plus] AudioContext state changed:', this.context.state);
+      if (this.context.state === 'suspended') {
+        this.resumeContext();
+      }
+    });
+  }
+
+  private handleVisibilityChange() {
+    if (document.visibilityState === 'visible') {
+      this.resumeContext();
+    }
+  }
+
+  private resumeContext() {
+    if (this.context.state === 'suspended') {
+      this.context.resume().catch((error) => {
+        console.warn('[YouTube Audio Plus] Failed to resume AudioContext:', error);
+      });
+    }
   }
 
   public attach(video: HTMLMediaElement) {
@@ -55,18 +95,17 @@ export class AudioEngine {
       const source = this.context.createMediaElementSource(video);
       source.connect(this.preamp);
       this.sources.set(video, source);
+      this.attachedVideos.add(video);
 
       // Ensure context is running
-      if (this.context.state === 'suspended') {
-        this.context.resume();
-      }
+      this.resumeContext();
 
       // Re-check context state on play
-      video.addEventListener('play', () => {
-        if (this.context.state === 'suspended') {
-          this.context.resume();
-        }
-      });
+      video.addEventListener('play', this.boundResumeContext);
+
+      // PiP transitions on this video are another reliable signal that the context may need to be resumed
+      video.addEventListener('enterpictureinpicture', this.boundResumeContext);
+      video.addEventListener('leavepictureinpicture', this.boundResumeContext);
     } catch (error) {
       console.warn('[YouTube Audio Plus] Failed to attach to video:', error);
     }
