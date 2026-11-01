@@ -1,14 +1,23 @@
+interface MediaSourceState {
+  node: MediaElementAudioSourceNode;
+  connected: boolean;
+  detachAfter?: number;
+}
+
 export class AudioEngine {
   private context: AudioContext;
-  private sources: WeakMap<HTMLMediaElement, MediaElementAudioSourceNode>;
+  private sources: WeakMap<HTMLMediaElement, MediaSourceState>;
   private filters: BiquadFilterNode[];
   private preamp: GainNode;
   private compressor: DynamicsCompressorNode;
-  private attachedVideos: Set<HTMLMediaElement>;
+  private attachedVideos: Map<HTMLMediaElement, MediaSourceState>;
   private boundResumeContext: () => void;
   private boundHandleVisibilityChange: () => void;
+  private boundHandleMediaEvent: (event: Event) => void;
+  private cleanupTimer: number | undefined;
 
   private readonly frequencies = [32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
+  private readonly detachGraceMs = 1000;
 
   constructor() {
     console.log('[YouTube Audio Plus] Audio Engine Initialized');
@@ -17,7 +26,7 @@ export class AudioEngine {
     this.context = new AudioContextClass();
     this.sources = new WeakMap();
     this.filters = [];
-    this.attachedVideos = new Set();
+    this.attachedVideos = new Map();
 
     // 1. Create Preamp (Gain)
     this.preamp = this.context.createGain();
@@ -53,6 +62,7 @@ export class AudioEngine {
     // 5. Defensive resume handling for suspended contexts
     this.boundResumeContext = this.resumeContext.bind(this);
     this.boundHandleVisibilityChange = this.handleVisibilityChange.bind(this);
+    this.boundHandleMediaEvent = this.handleMediaEvent.bind(this);
     this.setupContextResilience();
   }
 
@@ -88,26 +98,86 @@ export class AudioEngine {
   }
 
   public attach(video: HTMLMediaElement) {
-    console.log('[YouTube Audio Plus] Attaching to video', video);
-    if (this.sources.has(video)) return;
+    let source = this.sources.get(video);
+    console.log('[YouTube Audio Plus] Attaching video:', video);
+    if (source?.connected) {
+      source.detachAfter = undefined;
+      return;
+    }
 
     try {
-      const source = this.context.createMediaElementSource(video);
-      source.connect(this.preamp);
-      this.sources.set(video, source);
-      this.attachedVideos.add(video);
+      if (!source) {
+        source = {
+          node: this.context.createMediaElementSource(video),
+          connected: false,
+        };
+        // A media element can only have one source node, even after disconnect().
+        this.sources.set(video, source);
+        for (const type of ['play', 'pause', 'ended', 'volumechange', 'enterpictureinpicture', 'leavepictureinpicture']) {
+          video.addEventListener(type, this.boundHandleMediaEvent);
+        }
+      }
 
-      // Ensure context is running
+      source.node.connect(this.preamp);
+      source.connected = true;
+      source.detachAfter = undefined;
+      this.attachedVideos.set(video, source);
+
       this.resumeContext();
-
-      // Re-check context state on play
-      video.addEventListener('play', this.boundResumeContext);
-
-      // PiP transitions on this video are another reliable signal that the context may need to be resumed
-      video.addEventListener('enterpictureinpicture', this.boundResumeContext);
-      video.addEventListener('leavepictureinpicture', this.boundResumeContext);
     } catch (error) {
       console.warn('[YouTube Audio Plus] Failed to attach to video:', error);
+    }
+  }
+
+  private handleMediaEvent(event: Event) {
+    const video = event.currentTarget;
+    if (!(video instanceof HTMLMediaElement)) return;
+
+    if (event.type === 'play' || event.type === 'enterpictureinpicture' ||
+      (event.type === 'volumechange' && this.isAudible(video))) {
+      this.attach(video);
+    }
+    this.resumeContext();
+    this.releaseDetachedVideos();
+  }
+
+  private isAudible(video: HTMLMediaElement) {
+    return !video.paused && !video.ended && !video.muted && video.volume > 0;
+  }
+
+  public releaseDetachedVideos() {
+    if (this.cleanupTimer !== undefined) {
+      window.clearTimeout(this.cleanupTimer);
+      this.cleanupTimer = undefined;
+    }
+
+    const now = performance.now();
+    let nextCleanup = Infinity;
+    for (const [video, source] of this.attachedVideos) {
+      // DOM moves, detached playback and PiP must not interrupt the audio path.
+      if (video.isConnected || this.isAudible(video) || document.pictureInPictureElement === video) {
+        source.detachAfter = undefined;
+        continue;
+      }
+
+      source.detachAfter ??= now + this.detachGraceMs;
+      if (source.detachAfter <= now) {
+        try {
+          source.node.disconnect(this.preamp);
+          source.connected = false;
+          source.detachAfter = undefined;
+          this.attachedVideos.delete(video);
+          continue;
+        } catch (error) {
+          console.warn('[YouTube Audio Plus] Failed to disconnect video source:', error);
+          source.detachAfter = now + this.detachGraceMs;
+        }
+      }
+      nextCleanup = Math.min(nextCleanup, source.detachAfter);
+    }
+
+    if (nextCleanup !== Infinity) {
+      this.cleanupTimer = window.setTimeout(() => this.releaseDetachedVideos(), nextCleanup - now);
     }
   }
 

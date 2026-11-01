@@ -3,7 +3,6 @@ import { AudioEngine } from './audio-engine';
 console.log('[YouTube Audio Plus] Injected script loaded');
 
 const engine = new AudioEngine();
-let debounceTimer: number | undefined;
 
 // 1. Listen for messages from the React UI (Content Script)
 window.addEventListener('message', (event) => {
@@ -27,18 +26,16 @@ const attachToVideos = () => {
   videos.forEach((v) => engine.attach(v));
 };
 
-// Example observer setup
 const observer = new MutationObserver((mutations) => {
-  // Check if any nodes were actually added (ignore attribute changes or text updates)
-  const hasAddedNodes = mutations.some(m => m.addedNodes.length > 0);
-
-  if (hasAddedNodes) {
-    if (debounceTimer) clearTimeout(debounceTimer);
-
-    debounceTimer = window.setTimeout(() => {
-      console.log('[YouTube Audio Plus] Attaching to videos after DOM mutation');
-      attachToVideos();
-    }, 100);
+  for (const mutation of mutations) {
+    for (const node of mutation.addedNodes) {
+      if (!(node instanceof Element) || !node.isConnected) continue;
+      if (node instanceof HTMLVideoElement) engine.attach(node);
+      node.querySelectorAll('video').forEach((video) => engine.attach(video));
+    }
+  }
+  if (mutations.some((mutation) => mutation.removedNodes.length > 0)) {
+    engine.releaseDetachedVideos();
   }
 });
 
