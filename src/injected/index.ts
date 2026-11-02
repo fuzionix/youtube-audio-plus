@@ -3,11 +3,18 @@ import { AudioEngine } from './audio-engine';
 console.log('[YouTube Audio Plus] Injected script loaded');
 
 const engine = new AudioEngine();
+let extensionEnabled = false;
 
 // 1. Listen for messages from the React UI (Content Script)
 window.addEventListener('message', (event) => {
   // Security check: ensure message is from the same window
   if (event.source !== window) return;
+
+  if (event.data?.type === 'YT_AUDIO_ENABLED' && typeof event.data.payload?.enabled === 'boolean') {
+    extensionEnabled = event.data.payload.enabled;
+    engine.setEnabled(extensionEnabled);
+    if (extensionEnabled) attachToVideos();
+  }
 
   if (event.data?.type === 'YT_AUDIO_UPDATE') {
     const { eqValues } = event.data.payload;
@@ -22,6 +29,7 @@ window.addEventListener('message', (event) => {
 
 // 2. Observer to attach to existing and new videos
 const attachToVideos = () => {
+  if (!extensionEnabled) return;
   const videos = document.querySelectorAll('video');
   videos.forEach((v) => engine.attach(v));
 };
@@ -29,7 +37,7 @@ const attachToVideos = () => {
 const observer = new MutationObserver((mutations) => {
   for (const mutation of mutations) {
     for (const node of mutation.addedNodes) {
-      if (!(node instanceof Element) || !node.isConnected) continue;
+      if (!extensionEnabled || !(node instanceof Element) || !node.isConnected) continue;
       if (node instanceof HTMLVideoElement) engine.attach(node);
       node.querySelectorAll('video').forEach((video) => engine.attach(video));
     }

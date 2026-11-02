@@ -18,6 +18,7 @@ const AudioPanel = () => {
 
   const persistTimerRef = useRef<number | undefined>(undefined);
   const latestEqValuesRef = useRef<number[]>(eqValues);
+  const pendingEqValuesRef = useRef<number[] | undefined>(undefined);
 
   const {
     currentView,
@@ -66,6 +67,7 @@ const AudioPanel = () => {
     if (!isLoaded) return;
 
     latestEqValuesRef.current = eqValues;
+    pendingEqValuesRef.current = eqValues;
 
     window.postMessage(
       {
@@ -81,6 +83,7 @@ const AudioPanel = () => {
 
     persistTimerRef.current = window.setTimeout(() => {
       persistToStorage(latestEqValuesRef.current);
+      pendingEqValuesRef.current = undefined;
       persistTimerRef.current = undefined;
     }, STORAGE_PERSIST_DELAY_MS);
 
@@ -98,7 +101,10 @@ const AudioPanel = () => {
       if (persistTimerRef.current) {
         window.clearTimeout(persistTimerRef.current);
         persistTimerRef.current = undefined;
-        persistToStorage(latestEqValuesRef.current);
+      }
+      if (pendingEqValuesRef.current) {
+        persistToStorage(pendingEqValuesRef.current);
+        pendingEqValuesRef.current = undefined;
       }
     };
   }, [persistToStorage]);

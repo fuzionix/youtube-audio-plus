@@ -1,21 +1,39 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
+import type { Root } from 'react-dom/client';
 import injectedScriptPath from '@/injected/index.ts?script&module';
 import styles from '@/index.css?inline';
 import AudioControl from '@/components/AudioControl.tsx';
 import AudioPanelOverlay from '@/components/AudioPanelOverlay.tsx';
+import { EXTENSION_ENABLED_KEY } from '@/utils/extension-state';
 
 console.log('[YouTube Audio Plus] Content script loaded');
 
+let extensionEnabled = false;
+let settingsRevision = 0;
+const mountedRoots = new Map<string, { root: Root; host: Element }>();
+
 const syncSettingsToInjectedScript = async () => {
+  const revision = ++settingsRevision;
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result = await chrome.storage.sync.get(['ytAudioSettings']) as any;
-    if (result.ytAudioSettings && Array.isArray(result.ytAudioSettings.eqValues)) {
+    const result = await chrome.storage.sync.get(['ytAudioSettings', EXTENSION_ENABLED_KEY]);
+    if (revision !== settingsRevision) return;
+
+    extensionEnabled = result[EXTENSION_ENABLED_KEY] !== false;
+    if (extensionEnabled) injectEngine();
+    window.postMessage({
+      type: 'YT_AUDIO_ENABLED',
+      payload: { enabled: extensionEnabled },
+    }, '*');
+    ensureMounted();
+
+    const settings = result.ytAudioSettings;
+    if (settings && typeof settings === 'object' &&
+      'eqValues' in settings && Array.isArray(settings.eqValues)) {
       console.log('[YouTube Audio Plus] Syncing initial settings');
       window.postMessage({
         type: 'YT_AUDIO_UPDATE',
-        payload: { eqValues: result.ytAudioSettings.eqValues }
+        payload: { eqValues: settings.eqValues }
       }, '*');
     }
   } catch (e) {
@@ -33,19 +51,26 @@ window.addEventListener('message', (event) => {
 
 // Listen for storage changes (e.g., if changed in another tab OR another device)
 chrome.storage.onChanged.addListener((changes, area) => {
-  if (area === 'sync' && changes.ytAudioSettings) {
+  if (area === 'sync' && (changes.ytAudioSettings || changes[EXTENSION_ENABLED_KEY])) {
     syncSettingsToInjectedScript();
   }
 });
 
 // 1. Inject the Main World script
+let engineInjected = false;
 const injectEngine = () => {
-  if (document.getElementById('yt-audio-plus-engine')) return;
+  if (engineInjected) return;
+  engineInjected = true;
   const script = document.createElement('script');
   script.id = 'yt-audio-plus-engine';
   script.src = chrome.runtime.getURL(injectedScriptPath);
   script.type = 'module';
   script.onload = () => script.remove();
+  script.onerror = () => {
+    engineInjected = false;
+    script.remove();
+    console.error('[YouTube Audio Plus] Failed to load audio engine');
+  };
   (document.head || document.documentElement).appendChild(script);
 };
 
@@ -99,7 +124,9 @@ const injectButton = () => {
   mountPoint.className = 'flex items-center h-full';
   shadow.appendChild(mountPoint);
 
-  createRoot(mountPoint).render(
+  const root = createRoot(mountPoint);
+  mountedRoots.set('yt-audio-plus-button', { root, host: shadow.host });
+  root.render(
     <React.StrictMode>
       <AudioControl />
     </React.StrictMode>
@@ -120,7 +147,9 @@ const injectPanel = () => {
   mountPoint.className = 'w-full h-full';
   shadow.appendChild(mountPoint);
 
-  createRoot(mountPoint).render(
+  const root = createRoot(mountPoint);
+  mountedRoots.set('yt-audio-plus-panel', { root, host: shadow.host });
+  root.render(
     <React.StrictMode>
       <AudioPanelOverlay />
     </React.StrictMode>
@@ -132,6 +161,14 @@ const MOUNT_CHECK_DELAY = 150;
 let mountCheckTimer: number | undefined;
 
 const ensureMounted = () => {
+  for (const [id, { root, host }] of mountedRoots) {
+    if (!extensionEnabled || !host.isConnected) {
+      root.unmount();
+      host.remove();
+      mountedRoots.delete(id);
+    }
+  }
+  if (!extensionEnabled) return;
   if (!document.querySelector('#yt-audio-plus-button')) injectButton();
   if (!document.querySelector('#yt-audio-plus-panel')) injectPanel();
 };
@@ -156,9 +193,6 @@ const startObserving = () => {
 };
 
 const init = () => {
-  injectEngine();
-  injectButton();
-  injectPanel();
   syncSettingsToInjectedScript();
 };
 

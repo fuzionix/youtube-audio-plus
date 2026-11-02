@@ -15,6 +15,7 @@ export class AudioEngine {
   private boundHandleVisibilityChange: () => void;
   private boundHandleMediaEvent: (event: Event) => void;
   private cleanupTimer: number | undefined;
+  private enabled = false;
 
   private readonly frequencies = [32, 64, 125, 250, 500, 1000, 2000, 4000, 8000, 16000];
   private readonly detachGraceMs = 1000;
@@ -118,7 +119,7 @@ export class AudioEngine {
         }
       }
 
-      source.node.connect(this.preamp);
+      source.node.connect(this.enabled ? this.preamp : this.context.destination);
       source.connected = true;
       source.detachAfter = undefined;
       this.attachedVideos.set(video, source);
@@ -163,7 +164,7 @@ export class AudioEngine {
       source.detachAfter ??= now + this.detachGraceMs;
       if (source.detachAfter <= now) {
         try {
-          source.node.disconnect(this.preamp);
+          source.node.disconnect();
           source.connected = false;
           source.detachAfter = undefined;
           this.attachedVideos.delete(video);
@@ -185,6 +186,18 @@ export class AudioEngine {
     if (this.filters[index]) {
       this.filters[index].gain.value = value;
     }
+  }
+
+  public setEnabled(enabled: boolean) {
+    if (this.enabled === enabled) return;
+    this.enabled = enabled;
+
+    // Keep each media source alive: recreating it would break playback.
+    for (const source of this.attachedVideos.values()) {
+      source.node.disconnect();
+      source.node.connect(enabled ? this.preamp : this.context.destination);
+    }
+    this.resumeContext();
   }
 
   public setPreampGain(value: number) {
