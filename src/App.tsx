@@ -13,7 +13,7 @@ function App() {
       <PopupHeader />
       <main className="popup-main">
         <div className="popup-intro">
-          <span className="popup-eyebrow">A LITTLE PLUS. A BETTER LISTEN.</span>
+          <span className="popup-eyebrow">MAKE YOUTUBE SOUND LIKE YOURS.</span>
         </div>
 
         <ExtensionSwitch enabled={enabled} saving={saving} onToggle={toggle} />
@@ -24,10 +24,16 @@ function App() {
           </div>
         )}
 
-        <a className="popup-youtube-button" href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer">
-          <span>Open YouTube</span>
-          <ArrowUpRight size={17} aria-hidden="true" />
-        </a>
+        <div className="popup-destination-buttons">
+          <a className="popup-youtube-button" href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer">
+            <span>YouTube</span>
+            <ArrowUpRight size={17} aria-hidden="true" />
+          </a>
+          <a className="popup-youtube-music-button" href="https://music.youtube.com/" target="_blank" rel="noopener noreferrer">
+            <span>YouTube Music</span>
+            <ArrowUpRight size={17} aria-hidden="true" />
+          </a>
+        </div>
       </main>
       <PopupFooter />
     </div>

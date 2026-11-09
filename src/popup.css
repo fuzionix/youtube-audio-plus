@@ -164,26 +164,48 @@
   opacity: 0.5;
 }
 
-.popup .popup-youtube-button {
+.popup-destination-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.popup .popup-youtube-button,
+.popup .popup-youtube-music-button {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 10px;
+  flex: 1;
+  min-width: 0;
   margin-top: 16px;
   padding: 12px 16px;
   border-radius: 10px;
-  background: #f03;
   color: #fff;
   font-size: 13px;
   font-weight: 600;
   transition: background 160ms ease;
 }
 
+.popup .popup-youtube-button {
+  background: #f03;
+}
+
 .popup .popup-youtube-button:hover {
   background: #d9002b;
 }
 
+.popup .popup-youtube-music-button {
+  background: #282828;
+}
+
+.popup .popup-youtube-music-button:hover {
+  background: #111;
+}
+
 .popup-youtube-button span {
+  flex: 1;
+}
+
+.popup-youtube-music-button span {
   flex: 1;
 }
 
