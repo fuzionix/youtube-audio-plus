@@ -8,9 +8,7 @@ import {
 } from 'lucide-react';
 import AudioSlider from '../AudioSlider';
 import { type ViewType } from '../../types/views';
-
-const BASS_WEIGHTS =   [1.0, 1.0, 0.8, 0.3, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
-const TREBLE_WEIGHTS = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.3, 0.8, 1.0, 1.0];
+import { BASS_WEIGHTS, TREBLE_WEIGHTS } from '@/utils/audio-settings';
 
 interface BasicViewProps {
   eqValues: number[];

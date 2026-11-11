@@ -1,6 +1,5 @@
 import EqBand from '../EqBand';
-
-const FREQUENCIES = ["32", "64", "125", "250", "500", "1k", "2k", "4k", "8k", "16k"];
+import { EQ_FREQUENCIES } from '@/utils/audio-settings';
 
 interface EqualizerViewProps {
   eqValues: number[];
@@ -11,7 +10,7 @@ const EqualizerView = ({ eqValues, onEqChange }: EqualizerViewProps) => {
   return (
     <div className="p-4 min-h-[120px]">
       <div className="flex justify-between items-end h-full">
-        {FREQUENCIES.map((freq, i) => (
+        {EQ_FREQUENCIES.map((freq, i) => (
           <EqBand
             key={freq}
             frequency={freq}

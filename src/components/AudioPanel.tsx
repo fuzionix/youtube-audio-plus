@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { RotateCcw, ChevronLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useViewNavigation } from "@/hooks/useViewNavigation";
+import { getEqValues } from "@/utils/audio-settings";
 
 import BasicView from "./views/BasicView";
 import EqualizerView from "./views/EqualizerView";
@@ -28,26 +29,40 @@ const AudioPanel = () => {
     canGoBack
   } = useViewNavigation();
 
-  // Load settings from storage on mount
   useEffect(() => {
-    if (typeof chrome !== "undefined" && chrome.storage) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      chrome.storage.sync.get(["ytAudioSettings"], (result: any) => {
-        if (chrome.runtime.lastError) {
-          console.error(
-            "[YouTube Audio Plus] Failed to load settings:",
-            chrome.runtime.lastError.message
-          );
-          setIsLoaded(true);
-          return;
-        }
+    if (typeof chrome === "undefined" || !chrome.storage) return;
+    let active = true;
+    let changed = false;
 
-        if (result.ytAudioSettings && Array.isArray(result.ytAudioSettings.eqValues)) {
-          setEqValues(result.ytAudioSettings.eqValues);
-        }
-        setIsLoaded(true);
-      });
-    }
+    const listener = (changes: Record<string, chrome.storage.StorageChange>, area: string) => {
+      if (area !== "sync" || !changes.ytAudioSettings) return;
+      changed = true;
+      const values = getEqValues(changes.ytAudioSettings.newValue);
+      if (values.every((value, index) => value === latestEqValuesRef.current[index])) return;
+
+      if (persistTimerRef.current) window.clearTimeout(persistTimerRef.current);
+      persistTimerRef.current = undefined;
+      pendingEqValuesRef.current = undefined;
+      latestEqValuesRef.current = values;
+      setEqValues(values);
+    };
+
+    chrome.storage.onChanged.addListener(listener);
+    chrome.storage.sync.get(["ytAudioSettings"], (result) => {
+      if (!active) return;
+      if (chrome.runtime.lastError) {
+        console.error("[YouTube Audio Plus] Failed to load settings:", chrome.runtime.lastError.message);
+      } else if (!changed) {
+        const values = getEqValues(result.ytAudioSettings);
+        latestEqValuesRef.current = values;
+        setEqValues(values);
+      }
+      setIsLoaded(true);
+    });
+    return () => {
+      active = false;
+      chrome.storage.onChanged.removeListener(listener);
+    };
   }, []);
 
   const persistToStorage = useCallback((values: number[]) => {
@@ -66,9 +81,6 @@ const AudioPanel = () => {
   useEffect(() => {
     if (!isLoaded) return;
 
-    latestEqValuesRef.current = eqValues;
-    pendingEqValuesRef.current = eqValues;
-
     window.postMessage(
       {
         type: "YT_AUDIO_UPDATE",
@@ -76,24 +88,7 @@ const AudioPanel = () => {
       },
       "*",
     );
-
-    if (persistTimerRef.current) {
-      window.clearTimeout(persistTimerRef.current);
-    }
-
-    persistTimerRef.current = window.setTimeout(() => {
-      persistToStorage(latestEqValuesRef.current);
-      pendingEqValuesRef.current = undefined;
-      persistTimerRef.current = undefined;
-    }, STORAGE_PERSIST_DELAY_MS);
-
-    return () => {
-      if (persistTimerRef.current) {
-        window.clearTimeout(persistTimerRef.current);
-        persistTimerRef.current = undefined;
-      }
-    };
-  }, [eqValues, isLoaded, persistToStorage]);
+  }, [eqValues, isLoaded]);
 
   // Flush any pending persist on unmount so the last change isn't lost if the panel closes before the debounce window elapses.
   useEffect(() => {
@@ -109,20 +104,32 @@ const AudioPanel = () => {
     };
   }, [persistToStorage]);
 
+  const updateEqValues = (values: number[]) => {
+    latestEqValuesRef.current = values;
+    pendingEqValuesRef.current = values;
+    setEqValues(values);
+    if (persistTimerRef.current) window.clearTimeout(persistTimerRef.current);
+    persistTimerRef.current = window.setTimeout(() => {
+      persistToStorage(values);
+      pendingEqValuesRef.current = undefined;
+      persistTimerRef.current = undefined;
+    }, STORAGE_PERSIST_DELAY_MS);
+  };
+
   const handleReset = () => {
-    setEqValues(new Array(10).fill(0));
+    updateEqValues(new Array(10).fill(0));
   };
 
   const handleEqChange = (index: number, val: number) => {
     const newValues = [...eqValues];
     newValues[index] = val;
-    setEqValues(newValues);
+    updateEqValues(newValues);
   };
 
   const renderCurrentView = () => {
     const commonProps = {
       eqValues,
-      onEqChange: setEqValues,
+      onEqChange: updateEqValues,
       onNavigate: navigateTo,
     };
 

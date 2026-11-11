@@ -1,22 +1,25 @@
 import { ArrowUpRight } from 'lucide-react';
+import { useState } from 'react';
 import PopupHeader from '@/components/popup/PopupHeader';
 import ExtensionSwitch from '@/components/popup/ExtensionSwitch';
 import PopupFooter from '@/components/popup/PopupFooter';
+import PopupSettings from '@/components/popup/PopupSettings';
 import { useExtensionEnabled } from '@/hooks/useExtensionEnabled';
 import './popup.css';
 
 function App() {
   const { enabled, saving, error, toggle, retry } = useExtensionEnabled();
+  const [showSettings, setShowSettings] = useState(false);
 
   return (
     <div className="popup">
       <PopupHeader />
-      <main className="popup-main">
+      {showSettings ? <PopupSettings onBack={() => setShowSettings(false)} /> : <main className="popup-main">
         <div className="popup-intro">
           <span className="popup-eyebrow">MAKE YOUTUBE SOUND LIKE YOURS.</span>
         </div>
 
-        <ExtensionSwitch enabled={enabled} saving={saving} onToggle={toggle} />
+        <ExtensionSwitch enabled={enabled} saving={saving} onToggle={toggle} onSettings={() => setShowSettings(true)} />
         {error && (
           <div className="popup-error" role="alert">
             <span>{error}</span>
@@ -34,7 +37,7 @@ function App() {
             <ArrowUpRight size={17} aria-hidden="true" />
           </a>
         </div>
-      </main>
+      </main>}
       <PopupFooter />
     </div>
   );

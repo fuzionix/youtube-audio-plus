@@ -1,12 +1,13 @@
-import { AudioLines } from 'lucide-react';
+import { AudioLines, SlidersHorizontal } from 'lucide-react';
 
 interface ExtensionSwitchProps {
   enabled: boolean | null;
   saving: boolean;
   onToggle: () => void;
+  onSettings: () => void;
 }
 
-export default function ExtensionSwitch({ enabled, saving, onToggle }: ExtensionSwitchProps) {
+export default function ExtensionSwitch({ enabled, saving, onToggle, onSettings }: ExtensionSwitchProps) {
   const status = enabled === null ? 'Loading preference' : enabled ? 'Extension is on' : 'Extension is off';
 
   return (
@@ -32,6 +33,9 @@ export default function ExtensionSwitch({ enabled, saving, onToggle }: Extension
         onClick={onToggle}
       >
         <span className="popup-switch-thumb" />
+      </button>
+      <button className="popup-icon-button" type="button" onClick={onSettings} aria-label="Audio settings" title="Audio settings">
+        <SlidersHorizontal size={18} aria-hidden="true" />
       </button>
     </section>
   );
