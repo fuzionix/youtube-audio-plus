@@ -3,6 +3,7 @@ import { RotateCcw, ChevronLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useViewNavigation } from "@/hooks/useViewNavigation";
 import { getEqValues } from "@/utils/audio-settings";
+import { useTranslation } from "@/utils/i18n";
 
 import BasicView from "./views/BasicView";
 import EqualizerView from "./views/EqualizerView";
@@ -13,6 +14,7 @@ import VisualEffectView from "./views/VisualEffectView";
 const STORAGE_PERSIST_DELAY_MS = 400;
 
 const AudioPanel = () => {
+  const t = useTranslation();
   const isExtensionEnv = typeof chrome !== "undefined" && !!chrome.storage;
   const [eqValues, setEqValues] = useState<number[]>(new Array(10).fill(0));
   const [isLoaded, setIsLoaded] = useState(!isExtensionEnv);
@@ -158,8 +160,8 @@ const AudioPanel = () => {
             <button
               onClick={goBack}
               className="font-medium bg-transparent -ml-1 mb-[1px] border-none outline-none p-0 cursor-pointer text-yt-textSecondary hover:text-yt-text transition-colors"
-              aria-label="Back"
-              aria-route={currentConfig.title}
+              aria-label={t('back')}
+              aria-route={t(currentConfig.title)}
             >
               <ChevronLeft size={16} strokeWidth={2} className="inline-block" />
             </button>
@@ -168,7 +170,7 @@ const AudioPanel = () => {
         <button
           onClick={handleReset}
           className="font-medium bg-transparent -mr-1 mb-[1px] border-none outline-none p-0 cursor-pointer text-yt-textSecondary hover:text-yt-text transition-colors"
-          aria-label="Reset Audio Settings"
+          aria-label={t('resetAudioSettings')}
         >
           <RotateCcw size={16} strokeWidth={2} className="inline-block" />
         </button>

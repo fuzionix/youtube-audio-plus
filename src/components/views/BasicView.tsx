@@ -9,6 +9,7 @@ import {
 import AudioSlider from '../AudioSlider';
 import { type ViewType } from '../../types/views';
 import { BASS_WEIGHTS, TREBLE_WEIGHTS } from '@/utils/audio-settings';
+import { useTranslation } from '@/utils/i18n';
 
 interface BasicViewProps {
   eqValues: number[];
@@ -17,6 +18,7 @@ interface BasicViewProps {
 }
 
 const BasicView = ({ eqValues, onEqChange, onNavigate }: BasicViewProps) => {
+  const t = useTranslation();
   // Determine the current "Bass" level based on the peak bass frequency
   const bassLevel = useMemo(() => eqValues[1], [eqValues]);
   
@@ -47,24 +49,24 @@ const BasicView = ({ eqValues, onEqChange, onNavigate }: BasicViewProps) => {
     <div className="flex flex-col">
       <AudioSlider
         icon={Speaker}
-        label="Bass"
+        label={t('bass')}
         value={bassLevel}
         min={-12}
         max={12}
         onChange={handleBassChange}
         formatValue={(v) => (v > 0 ? `+${v.toFixed(0)}` : v.toFixed(0))}
-        description="Boost deep sounds"
+        description={t('bassDescription')}
       />
 
       <AudioSlider
         icon={MicVocal}
-        label="Treble"
+        label={t('treble')}
         value={trebleLevel}
         min={-12}
         max={12}
         onChange={handleTrebleChange}
         formatValue={(v) => (v > 0 ? `+${v.toFixed(0)}` : v.toFixed(0))}
-        description="Enhance crisp highs"
+        description={t('trebleDescription')}
       />
 
       <div>
@@ -77,7 +79,7 @@ const BasicView = ({ eqValues, onEqChange, onNavigate }: BasicViewProps) => {
             strokeWidth={2}
             className="-rotate-90"
           />
-          <span className="inline-block">Equalizer</span>
+          <span className="inline-block">{t('equalizer')}</span>
         </button>
       </div>
 
@@ -90,7 +92,7 @@ const BasicView = ({ eqValues, onEqChange, onNavigate }: BasicViewProps) => {
             size={16}
             strokeWidth={2}
           />
-          <span className="inline-block">Advanced</span>
+          <span className="inline-block">{t('advanced')}</span>
         </button>
         <button
           onClick={() => onNavigate('visual')}
@@ -100,7 +102,7 @@ const BasicView = ({ eqValues, onEqChange, onNavigate }: BasicViewProps) => {
             size={16}
             strokeWidth={2}
           />
-          <span className="inline-block">Visual Effects</span>
+          <span className="inline-block">{t('visualEffects')}</span>
         </button>
       </div>
     </div>

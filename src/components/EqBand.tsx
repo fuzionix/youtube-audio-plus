@@ -5,6 +5,7 @@ interface EqBandProps {
 }
 
 const EqBand = ({ frequency, value, onChange }: EqBandProps) => {
+  const t = useTranslation();
   const min = -12;
   const max = 12;
   const percentage = ((value - min) / (max - min)) * 100;
@@ -21,7 +22,7 @@ const EqBand = ({ frequency, value, onChange }: EqBandProps) => {
           value={value}
           onChange={(e) => onChange(parseFloat(e.target.value))}
           className="absolute w-[120px] h-[30px] -rotate-90 opacity-0 cursor-pointer z-10"
-          aria-label={`${frequency}Hz band`}
+          aria-label={t('frequencyBand', { frequency })}
         />
 
         {/* Visual Track Container */}
@@ -48,3 +49,5 @@ const EqBand = ({ frequency, value, onChange }: EqBandProps) => {
 };
 
 export default EqBand;
+import { useTranslation } from '@/utils/i18n';
+

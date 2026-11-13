@@ -8,7 +8,7 @@ import {
 export function useExtensionEnabled() {
   const [enabled, setEnabled] = useState<boolean | null>(null);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<'loadPreferenceError' | 'savePreferenceError' | null>(null);
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
@@ -23,7 +23,7 @@ export function useExtensionEnabled() {
       if (active && !changed) setEnabled(value);
     }).catch((cause: unknown) => {
       console.error('[YouTube Audio Plus] Failed to load extension state:', cause);
-      if (active) setError('Could not load your preference. Please try again.');
+      if (active) setError('loadPreferenceError');
     });
 
     return () => {
@@ -42,7 +42,7 @@ export function useExtensionEnabled() {
       setEnabled(nextEnabled);
     } catch (cause) {
       console.error('[YouTube Audio Plus] Failed to save extension state:', cause);
-      setError('Could not save your preference. Please try again.');
+      setError('savePreferenceError');
     } finally {
       setSaving(false);
     }

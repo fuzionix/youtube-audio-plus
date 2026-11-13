@@ -1,7 +1,9 @@
 import React from 'react';
 import { AudioLines } from 'lucide-react';
+import { useTranslation } from '@/utils/i18n';
 
 const AudioControl = () => {
+  const t = useTranslation();
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     window.dispatchEvent(new CustomEvent('YT_AUDIO_PLUS_TOGGLE'));
@@ -12,8 +14,8 @@ const AudioControl = () => {
       <button
         onClick={handleClick}
         className="flex items-center justify-center p-1.5 rounded-full border-none bg-transparent cursor-pointer transition-opacity hover:bg-yt-overlayButtonSecondary focus:outline-none"
-        aria-label="Audio Settings"
-        title="Audio Settings"
+        aria-label={t('audioSettings')}
+        title={t('audioSettings')}
         style={{ verticalAlign: 'top' }}
       >
         <AudioLines 

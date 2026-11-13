@@ -1,4 +1,5 @@
 import { AudioLines, SlidersHorizontal } from 'lucide-react';
+import { useTranslation } from '@/utils/i18n';
 
 interface ExtensionSwitchProps {
   enabled: boolean | null;
@@ -8,18 +9,19 @@ interface ExtensionSwitchProps {
 }
 
 export default function ExtensionSwitch({ enabled, saving, onToggle, onSettings }: ExtensionSwitchProps) {
-  const status = enabled === null ? 'Loading preference' : enabled ? 'Extension is on' : 'Extension is off';
+  const t = useTranslation();
+  const status = t(enabled === null ? 'loadingPreference' : enabled ? 'extensionOn' : 'extensionOff');
 
   return (
-    <section className="popup-state-card" aria-label="Extension status" aria-busy={enabled === null || saving}>
+    <section className="popup-state-card" aria-label={t('extensionStatus')} aria-busy={enabled === null || saving}>
       <div className={`popup-power${enabled ? ' is-enabled' : ''}`}>
         <AudioLines size={20} strokeWidth={2} aria-hidden="true" />
       </div>
       <div className="popup-state-copy">
-        <h2 id="extension-switch-label">Audio Enhancement</h2>
+        <h2 id="extension-switch-label">{t('audioEnhancement')}</h2>
         <p id="extension-switch-status" role="status">
           <span className={`popup-status-dot${enabled ? ' is-enabled' : ''}`} aria-hidden="true" />
-          {saving ? 'Saving preference' : status}
+          {saving ? t('savingPreference') : status}
         </p>
       </div>
       <button
@@ -34,7 +36,7 @@ export default function ExtensionSwitch({ enabled, saving, onToggle, onSettings 
       >
         <span className="popup-switch-thumb" />
       </button>
-      <button className="popup-icon-button" type="button" onClick={onSettings} aria-label="Audio settings" title="Audio settings">
+      <button className="popup-icon-button" type="button" onClick={onSettings} aria-label={t('audioSettings')} title={t('audioSettings')}>
         <SlidersHorizontal size={18} aria-hidden="true" />
       </button>
     </section>

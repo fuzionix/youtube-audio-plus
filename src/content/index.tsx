@@ -6,12 +6,32 @@ import styles from '@/index.css?inline';
 import AudioControl from '@/components/AudioControl.tsx';
 import AudioPanelOverlay from '@/components/AudioPanelOverlay.tsx';
 import { EXTENSION_ENABLED_KEY } from '@/utils/extension-state';
+import { LocaleContext } from '@/utils/i18n';
+import { observeYouTubeLocale, resolveLocale, YOUTUBE_LOCALE_KEY } from '@/utils/locale';
+import type { Locale } from '@/utils/locale';
 
 console.log('[YouTube Audio Plus] Content script loaded');
 
 let extensionEnabled = false;
 let settingsRevision = 0;
-const mountedRoots = new Map<string, { root: Root; host: Element }>();
+let locale: Locale = 'en';
+const mountedRoots = new Map<string, { root: Root; host: Element; component: React.ReactNode }>();
+
+const renderRoot = (root: Root, component: React.ReactNode) => {
+  root.render(
+    <React.StrictMode>
+      <LocaleContext.Provider value={locale}>{component}</LocaleContext.Provider>
+    </React.StrictMode>
+  );
+};
+
+observeYouTubeLocale(document.documentElement, (language) => {
+  locale = resolveLocale(language);
+  for (const { root, component } of mountedRoots.values()) renderRoot(root, component);
+  void chrome.storage.local.set({ [YOUTUBE_LOCALE_KEY]: language }).catch((error: unknown) => {
+    console.error('[YouTube Audio Plus] Failed to save YouTube language:', error);
+  });
+});
 
 const syncSettingsToInjectedScript = async () => {
   const revision = ++settingsRevision;
@@ -125,12 +145,9 @@ const injectButton = () => {
   shadow.appendChild(mountPoint);
 
   const root = createRoot(mountPoint);
-  mountedRoots.set('yt-audio-plus-button', { root, host: shadow.host });
-  root.render(
-    <React.StrictMode>
-      <AudioControl />
-    </React.StrictMode>
-  );
+  const component = <AudioControl />;
+  mountedRoots.set('yt-audio-plus-button', { root, host: shadow.host, component });
+  renderRoot(root, component);
 };
 
 // 4. Inject Panel Overlay
@@ -148,12 +165,9 @@ const injectPanel = () => {
   shadow.appendChild(mountPoint);
 
   const root = createRoot(mountPoint);
-  mountedRoots.set('yt-audio-plus-panel', { root, host: shadow.host });
-  root.render(
-    <React.StrictMode>
-      <AudioPanelOverlay />
-    </React.StrictMode>
-  );
+  const component = <AudioPanelOverlay />;
+  mountedRoots.set('yt-audio-plus-panel', { root, host: shadow.host, component });
+  renderRoot(root, component);
 };
 
 // 5. Debounce mount checks to avoid excessive DOM queries

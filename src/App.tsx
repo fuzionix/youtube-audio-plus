@@ -5,9 +5,11 @@ import ExtensionSwitch from '@/components/popup/ExtensionSwitch';
 import PopupFooter from '@/components/popup/PopupFooter';
 import PopupSettings from '@/components/popup/PopupSettings';
 import { useExtensionEnabled } from '@/hooks/useExtensionEnabled';
+import { useTranslation } from '@/utils/i18n';
 import './popup.css';
 
 function App() {
+  const t = useTranslation();
   const { enabled, saving, error, toggle, retry } = useExtensionEnabled();
   const [showSettings, setShowSettings] = useState(false);
 
@@ -16,14 +18,14 @@ function App() {
       <PopupHeader />
       {showSettings ? <PopupSettings onBack={() => setShowSettings(false)} /> : <main className="popup-main">
         <div className="popup-intro">
-          <span className="popup-eyebrow">MAKE YOUTUBE SOUND LIKE YOURS.</span>
+          <span className="popup-eyebrow">{t('popupTagline')}</span>
         </div>
 
         <ExtensionSwitch enabled={enabled} saving={saving} onToggle={toggle} onSettings={() => setShowSettings(true)} />
         {error && (
           <div className="popup-error" role="alert">
-            <span>{error}</span>
-            {enabled === null && <button type="button" onClick={retry}>Retry</button>}
+            <span>{t(error)}</span>
+            {enabled === null && <button type="button" onClick={retry}>{t('retry')}</button>}
           </div>
         )}
 

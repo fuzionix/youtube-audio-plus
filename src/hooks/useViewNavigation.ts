@@ -9,24 +9,24 @@ import {
 const VIEW_CONFIGS: Record<ViewType, ViewConfig> = {
   basic: {
     id: 'basic',
-    title: 'Audio Settings',
+    title: 'audioSettings',
     showBackButton: false,
   },
   equalizer: {
     id: 'equalizer',
-    title: 'Equalizer',
+    title: 'equalizer',
     icon: SlidersHorizontal,
     showBackButton: true,
   },
   advanced: {
     id: 'advanced',
-    title: 'Advanced',
+    title: 'advanced',
     icon: KeyboardMusic,
     showBackButton: true,
   },
   visual: {
     id: 'visual',
-    title: 'Visual Effects',
+    title: 'visualEffects',
     icon: Sparkles,
     showBackButton: true,
   },
