@@ -217,6 +217,21 @@
   font-size: 11px;
 }
 
+.popup-settings-scroll {
+  position: relative;
+}
+
+.popup-settings-scroll.can-scroll-down::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 64px;
+  background: linear-gradient(to bottom, transparent, #fff);
+  content: '';
+  pointer-events: none;
+}
+
 .popup-settings-content {
   max-height: 390px;
   overflow-y: auto;

@@ -8,9 +8,33 @@ const hasStorage = () => typeof chrome !== 'undefined' && !!chrome.storage?.sync
 export default function PopupSettings({ onBack }: { onBack: () => void }) {
   const [values, setValues] = useState<number[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [canScrollDown, setCanScrollDown] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollContentRef = useRef<HTMLDivElement>(null);
   const valuesRef = useRef<number[] | null>(null);
   const pendingRef = useRef<number[] | null>(null);
   const timerRef = useRef<number | undefined>(undefined);
+  const hasValues = values !== null;
+
+  useEffect(() => {
+    const scroll = scrollRef.current;
+    const content = scrollContentRef.current;
+    if (!scroll || !content) return;
+
+    const updateScrollIndicator = () => {
+      setCanScrollDown(scroll.scrollHeight - scroll.clientHeight - scroll.scrollTop > 1);
+    };
+    const observer = new ResizeObserver(updateScrollIndicator);
+    observer.observe(scroll);
+    observer.observe(content);
+    scroll.addEventListener('scroll', updateScrollIndicator);
+    updateScrollIndicator();
+
+    return () => {
+      observer.disconnect();
+      scroll.removeEventListener('scroll', updateScrollIndicator);
+    };
+  }, [hasValues]);
 
   const save = useCallback(() => {
     if (timerRef.current !== undefined) window.clearTimeout(timerRef.current);
@@ -112,29 +136,33 @@ export default function PopupSettings({ onBack }: { onBack: () => void }) {
         </button>
       </div>
       {error && <div className="popup-error" role="alert">{error} {values && <button type="button" onClick={() => { update(values); save(); }}>Retry</button>}</div>}
-      {values ? <div className="popup-settings-content">
-        <section className="popup-settings-section" aria-labelledby="tone-heading">
-          <div className="popup-section-heading"><h2 id="tone-heading">Tone</h2><span>-12 to +12 dB</span></div>
-          {[{ label: 'Bass', index: 1, weights: BASS_WEIGHTS }, { label: 'Treble', index: 9, weights: TREBLE_WEIGHTS }].map(({ label, index, weights }) => (
-            <PopupSlider key={label} label={label} value={values[index]} onChange={(value) => updateWeighted(value, weights)} />
-          ))}
-        </section>
-        <details className="popup-equalizer">
-          <summary className="popup-equalizer-heading">
-            <span className="popup-equalizer-icon"><SlidersHorizontal size={16} aria-hidden="true" /></span>
-            <span className="popup-equalizer-title"><strong>Equalizer</strong><span>10 frequency bands</span></span>
-            <ChevronDown className="popup-equalizer-chevron" size={17} aria-hidden="true" />
-          </summary>
-          <div className="popup-equalizer-bands">
-            {EQ_FREQUENCIES.map((frequency, index) => (
-              <PopupSlider key={frequency} label={`${frequency}`} unit="Hz" value={values[index]} onChange={(value) => {
-                const next = [...(valuesRef.current ?? values)];
-                next[index] = value;
-                update(next);
-              }} />
-            ))}
+      {values ? <div className={`popup-settings-scroll${canScrollDown ? ' can-scroll-down' : ''}`}>
+        <div className="popup-settings-content" ref={scrollRef}>
+          <div ref={scrollContentRef}>
+            <section className="popup-settings-section" aria-labelledby="tone-heading">
+              <div className="popup-section-heading"><h2 id="tone-heading">Tone</h2><span>-12 to +12 dB</span></div>
+              {[{ label: 'Bass', index: 1, weights: BASS_WEIGHTS }, { label: 'Treble', index: 9, weights: TREBLE_WEIGHTS }].map(({ label, index, weights }) => (
+                <PopupSlider key={label} label={label} value={values[index]} onChange={(value) => updateWeighted(value, weights)} />
+              ))}
+            </section>
+            <details className="popup-equalizer">
+              <summary className="popup-equalizer-heading">
+                <span className="popup-equalizer-icon"><SlidersHorizontal size={16} aria-hidden="true" /></span>
+                <span className="popup-equalizer-title"><strong>Equalizer</strong><span>10 frequency bands</span></span>
+                <ChevronDown className="popup-equalizer-chevron" size={17} aria-hidden="true" />
+              </summary>
+              <div className="popup-equalizer-bands">
+                {EQ_FREQUENCIES.map((frequency, index) => (
+                  <PopupSlider key={frequency} label={`${frequency}`} unit="Hz" value={values[index]} onChange={(value) => {
+                    const next = [...(valuesRef.current ?? values)];
+                    next[index] = value;
+                    update(next);
+                  }} />
+                ))}
+              </div>
+            </details>
           </div>
-        </details>
+        </div>
       </div> : !error && <p className="popup-settings-loading" role="status">Loading settings...</p>}
     </main>
   );
