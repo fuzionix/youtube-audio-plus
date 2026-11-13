@@ -127,7 +127,7 @@ export default function PopupSettings({ onBack }: { onBack: () => void }) {
           </summary>
           <div className="popup-equalizer-bands">
             {EQ_FREQUENCIES.map((frequency, index) => (
-              <PopupSlider key={frequency} label={`${frequency} Hz`} value={values[index]} onChange={(value) => {
+              <PopupSlider key={frequency} label={`${frequency}`} unit="Hz" value={values[index]} onChange={(value) => {
                 const next = [...(valuesRef.current ?? values)];
                 next[index] = value;
                 update(next);

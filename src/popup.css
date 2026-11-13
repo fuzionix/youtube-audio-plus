@@ -257,6 +257,10 @@
   white-space: nowrap;
 }
 
+.popup-setting-unit {
+  color: #737373;
+}
+
 .popup-slider {
   position: relative;
   display: flex;
