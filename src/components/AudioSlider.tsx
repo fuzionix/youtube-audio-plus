@@ -1,5 +1,5 @@
 interface AudioSliderProps {
-  icon: React.ElementType;
+  icon?: React.ElementType;
   label: string;
   value: number;
   min: number;
@@ -21,10 +21,10 @@ const AudioSlider = ({
   const percentage = Math.min(100, Math.max(0, ((value - min) / (max - min)) * 100));
 
   return (
-    <div className="group flex items-center justify-between px-4 py-4 rounded-[8px] hover:bg-yt-hover transition-colors cursor-pointer select-none">
+    <div className="group flex items-center justify-between px-4 py-4 mt-4 rounded-[8px] hover:bg-yt-hover transition-colors cursor-pointer select-none">
       {/* Icon and Label */}
       <div className="flex items-center min-w-[120px] gap-2">
-        <Icon size={24} className="text-yt-text pl-2 pr-8" strokeWidth={2} />
+        {Icon && <Icon size={24} className="text-yt-text pl-2 pr-8" strokeWidth={2} />}
         <div>
           <h4 className="m-0 text-yt-text text-[14px] font-medium font-sans">
             {label}

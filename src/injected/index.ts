@@ -1,4 +1,5 @@
 import { AudioEngine } from './audio-engine';
+import { getQualityFactor } from '../utils/audio-settings';
 
 console.log('[YouTube Audio Plus] Injected script loaded');
 
@@ -17,13 +18,14 @@ window.addEventListener('message', (event) => {
   }
 
   if (event.data?.type === 'YT_AUDIO_UPDATE') {
-    const { eqValues } = event.data.payload;
+    const { eqValues } = event.data.payload ?? {};
 
     if (Array.isArray(eqValues)) {
       eqValues.forEach((gain: number, index: number) => {
         engine.setFilterGain(index, gain);
       });
     }
+    engine.setQualityFactor(getQualityFactor(event.data.payload));
   }
 });
 

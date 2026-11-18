@@ -1,3 +1,5 @@
+import { DEFAULT_QUALITY_FACTOR } from '../utils/audio-settings';
+
 interface MediaSourceState {
   node: MediaElementAudioSourceNode;
   connected: boolean;
@@ -37,7 +39,7 @@ export class AudioEngine {
       const filter = this.context.createBiquadFilter();
       filter.type = 'peaking';
       filter.frequency.value = freq;
-      filter.Q.value = 1.4;
+      filter.Q.value = DEFAULT_QUALITY_FACTOR;
       filter.gain.value = 0;
       return filter;
     });
@@ -185,6 +187,12 @@ export class AudioEngine {
   public setFilterGain(index: number, value: number) {
     if (this.filters[index]) {
       this.filters[index].gain.value = value;
+    }
+  }
+
+  public setQualityFactor(value: number) {
+    for (const filter of this.filters) {
+      filter.Q.value = value;
     }
   }
 

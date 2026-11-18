@@ -2,7 +2,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { RotateCcw, ChevronLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useViewNavigation } from "@/hooks/useViewNavigation";
-import { getEqValues } from "@/utils/audio-settings";
+import { DEFAULT_QUALITY_FACTOR, getEqValues, getQualityFactor } from "@/utils/audio-settings";
+import type { AudioSettings } from "@/utils/audio-settings";
 import { useTranslation } from "@/utils/i18n";
 
 import BasicView from "./views/BasicView";
@@ -17,11 +18,12 @@ const AudioPanel = () => {
   const t = useTranslation();
   const isExtensionEnv = typeof chrome !== "undefined" && !!chrome.storage;
   const [eqValues, setEqValues] = useState<number[]>(new Array(10).fill(0));
+  const [qualityFactor, setQualityFactor] = useState(DEFAULT_QUALITY_FACTOR);
   const [isLoaded, setIsLoaded] = useState(!isExtensionEnv);
 
   const persistTimerRef = useRef<number | undefined>(undefined);
-  const latestEqValuesRef = useRef<number[]>(eqValues);
-  const pendingEqValuesRef = useRef<number[] | undefined>(undefined);
+  const latestSettingsRef = useRef<AudioSettings>({ eqValues, qualityFactor });
+  const pendingSettingsRef = useRef<AudioSettings | undefined>(undefined);
 
   const {
     currentView,
@@ -40,13 +42,21 @@ const AudioPanel = () => {
       if (area !== "sync" || !changes.ytAudioSettings) return;
       changed = true;
       const values = getEqValues(changes.ytAudioSettings.newValue);
-      if (values.every((value, index) => value === latestEqValuesRef.current[index])) return;
+      const nextQualityFactor = getQualityFactor(changes.ytAudioSettings.newValue);
+      if (values.every((value, index) => value === latestSettingsRef.current.eqValues[index])) {
+        if (nextQualityFactor === latestSettingsRef.current.qualityFactor) return;
+        latestSettingsRef.current = { eqValues: values, qualityFactor: nextQualityFactor };
+        if (pendingSettingsRef.current) pendingSettingsRef.current = latestSettingsRef.current;
+        setQualityFactor(nextQualityFactor);
+        return;
+      }
 
       if (persistTimerRef.current) window.clearTimeout(persistTimerRef.current);
       persistTimerRef.current = undefined;
-      pendingEqValuesRef.current = undefined;
-      latestEqValuesRef.current = values;
+      pendingSettingsRef.current = undefined;
+      latestSettingsRef.current = { eqValues: values, qualityFactor: nextQualityFactor };
       setEqValues(values);
+      setQualityFactor(nextQualityFactor);
     };
 
     chrome.storage.onChanged.addListener(listener);
@@ -56,8 +66,10 @@ const AudioPanel = () => {
         console.error("[YouTube Audio Plus] Failed to load settings:", chrome.runtime.lastError.message);
       } else if (!changed) {
         const values = getEqValues(result.ytAudioSettings);
-        latestEqValuesRef.current = values;
+        const nextQualityFactor = getQualityFactor(result.ytAudioSettings);
+        latestSettingsRef.current = { eqValues: values, qualityFactor: nextQualityFactor };
         setEqValues(values);
+        setQualityFactor(nextQualityFactor);
       }
       setIsLoaded(true);
     });
@@ -67,10 +79,10 @@ const AudioPanel = () => {
     };
   }, []);
 
-  const persistToStorage = useCallback((values: number[]) => {
+  const persistToStorage = useCallback((settings: AudioSettings) => {
     if (typeof chrome === "undefined" || !chrome.storage) return;
 
-    chrome.storage.sync.set({ ytAudioSettings: { eqValues: values } }, () => {
+    chrome.storage.sync.set({ ytAudioSettings: settings }, () => {
       if (chrome.runtime.lastError) {
         console.error(
           "[YouTube Audio Plus] Failed to persist settings:",
@@ -86,11 +98,11 @@ const AudioPanel = () => {
     window.postMessage(
       {
         type: "YT_AUDIO_UPDATE",
-        payload: { eqValues },
+        payload: { eqValues, qualityFactor },
       },
       "*",
     );
-  }, [eqValues, isLoaded]);
+  }, [eqValues, qualityFactor, isLoaded]);
 
   // Flush any pending persist on unmount so the last change isn't lost if the panel closes before the debounce window elapses.
   useEffect(() => {
@@ -99,27 +111,32 @@ const AudioPanel = () => {
         window.clearTimeout(persistTimerRef.current);
         persistTimerRef.current = undefined;
       }
-      if (pendingEqValuesRef.current) {
-        persistToStorage(pendingEqValuesRef.current);
-        pendingEqValuesRef.current = undefined;
+      if (pendingSettingsRef.current) {
+        persistToStorage(pendingSettingsRef.current);
+        pendingSettingsRef.current = undefined;
       }
     };
   }, [persistToStorage]);
 
-  const updateEqValues = (values: number[]) => {
-    latestEqValuesRef.current = values;
-    pendingEqValuesRef.current = values;
-    setEqValues(values);
+  const updateSettings = (settings: AudioSettings) => {
+    latestSettingsRef.current = settings;
+    pendingSettingsRef.current = settings;
+    setEqValues(settings.eqValues);
+    setQualityFactor(settings.qualityFactor);
     if (persistTimerRef.current) window.clearTimeout(persistTimerRef.current);
     persistTimerRef.current = window.setTimeout(() => {
-      persistToStorage(values);
-      pendingEqValuesRef.current = undefined;
+      if (pendingSettingsRef.current) persistToStorage(pendingSettingsRef.current);
+      pendingSettingsRef.current = undefined;
       persistTimerRef.current = undefined;
     }, STORAGE_PERSIST_DELAY_MS);
   };
 
+  const updateEqValues = (values: number[]) => {
+    updateSettings({ ...latestSettingsRef.current, eqValues: values });
+  };
+
   const handleReset = () => {
-    updateEqValues(new Array(10).fill(0));
+    updateSettings({ eqValues: new Array(10).fill(0), qualityFactor: DEFAULT_QUALITY_FACTOR });
   };
 
   const handleEqChange = (index: number, val: number) => {
@@ -139,7 +156,9 @@ const AudioPanel = () => {
       case 'basic':
         return <BasicView {...commonProps} />;
       case 'equalizer':
-        return <EqualizerView eqValues={eqValues} onEqChange={handleEqChange} />;
+        return <EqualizerView eqValues={eqValues} onEqChange={handleEqChange}
+          qualityFactor={qualityFactor}
+          onQualityFactorChange={(value) => updateSettings({ ...latestSettingsRef.current, qualityFactor: value })} />;
       case 'advanced':
         return <AdvancedView />;
       case 'visual':

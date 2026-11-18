@@ -6,6 +6,7 @@ import styles from '@/index.css?inline';
 import AudioControl from '@/components/AudioControl.tsx';
 import AudioPanelOverlay from '@/components/AudioPanelOverlay.tsx';
 import { EXTENSION_ENABLED_KEY } from '@/utils/extension-state';
+import { getEqValues, getQualityFactor } from '@/utils/audio-settings';
 import { LocaleContext } from '@/utils/i18n';
 import { observeYouTubeLocale, resolveLocale, YOUTUBE_LOCALE_KEY } from '@/utils/locale';
 import type { Locale } from '@/utils/locale';
@@ -48,14 +49,10 @@ const syncSettingsToInjectedScript = async () => {
     ensureMounted();
 
     const settings = result.ytAudioSettings;
-    if (settings && typeof settings === 'object' &&
-      'eqValues' in settings && Array.isArray(settings.eqValues)) {
-      console.log('[YouTube Audio Plus] Syncing initial settings');
-      window.postMessage({
-        type: 'YT_AUDIO_UPDATE',
-        payload: { eqValues: settings.eqValues }
-      }, '*');
-    }
+    window.postMessage({
+      type: 'YT_AUDIO_UPDATE',
+      payload: { eqValues: getEqValues(settings), qualityFactor: getQualityFactor(settings) }
+    }, '*');
   } catch (e) {
     console.error('[YouTube Audio Plus] Failed to sync settings:', e);
   }

@@ -1,12 +1,17 @@
 import EqBand from '../EqBand';
-import { EQ_FREQUENCIES } from '@/utils/audio-settings';
+import AudioSlider from '../AudioSlider';
+import { EQ_FREQUENCIES, MAX_QUALITY_FACTOR, MIN_QUALITY_FACTOR } from '@/utils/audio-settings';
+import { useTranslation } from '@/utils/i18n';
 
 interface EqualizerViewProps {
   eqValues: number[];
   onEqChange: (index: number, value: number) => void;
+  qualityFactor: number;
+  onQualityFactorChange: (value: number) => void;
 }
 
-const EqualizerView = ({ eqValues, onEqChange }: EqualizerViewProps) => {
+const EqualizerView = ({ eqValues, onEqChange, qualityFactor, onQualityFactorChange }: EqualizerViewProps) => {
+  const t = useTranslation();
   return (
     <div className="p-4 min-h-[120px]">
       <div className="flex justify-between items-end h-full">
@@ -19,6 +24,14 @@ const EqualizerView = ({ eqValues, onEqChange }: EqualizerViewProps) => {
           />
         ))}
       </div>
+      <AudioSlider
+        label={t('qualityFactor')}
+        description={`${t('qualityFactorDescription')}`}
+        value={qualityFactor}
+        min={MIN_QUALITY_FACTOR}
+        max={MAX_QUALITY_FACTOR}
+        onChange={onQualityFactorChange}
+      />
     </div>
   );
 };
