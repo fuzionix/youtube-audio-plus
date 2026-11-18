@@ -1,5 +1,6 @@
 import EqBand from '../EqBand';
 import AudioSlider from '../AudioSlider';
+import EqualizerVisualizer from '../EqualizerVisualizer';
 import { EQ_FREQUENCIES, MAX_QUALITY_FACTOR, MIN_QUALITY_FACTOR } from '@/utils/audio-settings';
 import { useTranslation } from '@/utils/i18n';
 
@@ -14,7 +15,8 @@ const EqualizerView = ({ eqValues, onEqChange, qualityFactor, onQualityFactorCha
   const t = useTranslation();
   return (
     <div className="p-4 min-h-[120px]">
-      <div className="flex justify-between items-end h-full">
+      <EqualizerVisualizer eqValues={eqValues} qualityFactor={qualityFactor} />
+      <div className="flex justify-between items-end h-full mb-4">
         {EQ_FREQUENCIES.map((freq, i) => (
           <EqBand
             key={freq}
