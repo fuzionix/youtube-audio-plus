@@ -18,9 +18,9 @@ const VIEW_CONFIGS: Record<ViewType, ViewConfig> = {
     icon: SlidersHorizontal,
     showBackButton: true,
   },
-  advanced: {
-    id: 'advanced',
-    title: 'advanced',
+  acoustic: {
+    id: 'acoustic',
+    title: 'acoustic',
     icon: KeyboardMusic,
     showBackButton: true,
   },

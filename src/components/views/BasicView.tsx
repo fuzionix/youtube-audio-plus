@@ -85,14 +85,14 @@ const BasicView = ({ eqValues, onEqChange, onNavigate }: BasicViewProps) => {
 
       <div className="flex mt-2.5 gap-2.5">
         <button
-          onClick={() => onNavigate('advanced')}
+          onClick={() => onNavigate('acoustic')}
           className="w-full flex items-center justify-center gap-4 py-3 rounded-[8px] text-yt-text bg-transparent hover:bg-yt-hover transition-colors border border-solid border-yt-borderLight"
         >
           <KeyboardMusic
             size={16}
             strokeWidth={2}
           />
-          <span className="inline-block">{t('advanced')}</span>
+          <span className="inline-block">{t('acoustic')}</span>
         </button>
         <button
           onClick={() => onNavigate('visual')}

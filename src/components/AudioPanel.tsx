@@ -8,7 +8,7 @@ import { useTranslation } from "@/utils/i18n";
 
 import BasicView from "./views/BasicView";
 import EqualizerView from "./views/EqualizerView";
-import AdvancedView from "./views/AdvancedView";
+import AcousticProcessingView from "./views/AcousticView";
 import VisualEffectView from "./views/VisualEffectView";
 
 // Debounce window for persisting to chrome.storage.sync.
@@ -159,8 +159,8 @@ const AudioPanel = () => {
         return <EqualizerView eqValues={eqValues} onEqChange={handleEqChange}
           qualityFactor={qualityFactor}
           onQualityFactorChange={(value) => updateSettings({ ...latestSettingsRef.current, qualityFactor: value })} />;
-      case 'advanced':
-        return <AdvancedView />;
+      case 'acoustic':
+        return <AcousticProcessingView />;
       case 'visual':
         return <VisualEffectView />;
       default:

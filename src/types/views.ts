@@ -1,4 +1,4 @@
-export type ViewType = 'basic' | 'equalizer' | 'advanced' | 'visual';
+export type ViewType = 'basic' | 'equalizer' | 'acoustic' | 'visual';
 
 export interface ViewConfig {
   id: ViewType;
