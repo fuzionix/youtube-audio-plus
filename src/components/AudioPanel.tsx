@@ -8,7 +8,7 @@ import { useTranslation } from "@/utils/i18n";
 
 import BasicView from "./views/BasicView";
 import EqualizerView from "./views/EqualizerView";
-import AcousticProcessingView from "./views/AcousticView";
+import AcousticProcessingView from "./views/AcousticProcessingView";
 import VisualEffectView from "./views/VisualEffectView";
 
 // Debounce window for persisting to chrome.storage.sync.
