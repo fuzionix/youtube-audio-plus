@@ -2,7 +2,7 @@ export const AUDIO_SETTINGS_KEY = 'ytAudioSettings';
 export const EQ_FREQUENCIES = ['32', '64', '125', '250', '500', '1k', '2k', '4k', '8k', '16k'];
 export const BASS_WEIGHTS = [1, 1, 0.8, 0.3, 0, 0, 0, 0, 0, 0];
 export const TREBLE_WEIGHTS = [0, 0, 0, 0, 0, 0, 0.3, 0.8, 1, 1];
-export const DEFAULT_QUALITY_FACTOR = 1.4;
+export const DEFAULT_QUALITY_FACTOR = 1.0;
 export const MIN_QUALITY_FACTOR = 0.1;
 export const MAX_QUALITY_FACTOR = 5;
 
