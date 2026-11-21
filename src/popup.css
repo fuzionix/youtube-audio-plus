@@ -296,6 +296,10 @@
   transform: translateX(-50%);
 }
 
+.popup-slider.is-unipolar::before {
+  display: none;
+}
+
 .popup-slider input {
   position: relative;
   appearance: none;
@@ -395,6 +399,16 @@
 
 .popup-equalizer-bands {
   padding: 0 2px 8px;
+}
+
+.popup-quality-factor {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #ededed;
+}
+
+.popup-quality-factor .popup-setting-row {
+  grid-template-columns: 90px minmax(0, 1fr) 40px;
 }
 
 .popup-settings-loading {

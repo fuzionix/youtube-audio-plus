@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ArrowLeft, ChevronDown, RotateCcw, SlidersHorizontal } from 'lucide-react';
 import PopupSlider from '@/components/popup/PopupSlider';
-import { AUDIO_SETTINGS_KEY, BASS_WEIGHTS, DEFAULT_QUALITY_FACTOR, EQ_FREQUENCIES, getEqValues, getQualityFactor, TREBLE_WEIGHTS } from '@/utils/audio-settings';
+import { AUDIO_SETTINGS_KEY, BASS_WEIGHTS, DEFAULT_QUALITY_FACTOR, EQ_FREQUENCIES, getEqValues, getQualityFactor, MAX_QUALITY_FACTOR, MIN_QUALITY_FACTOR, TREBLE_WEIGHTS } from '@/utils/audio-settings';
 import { useTranslation } from '@/utils/i18n';
 
 const hasStorage = () => typeof chrome !== 'undefined' && !!chrome.storage?.sync;
@@ -9,12 +9,14 @@ const hasStorage = () => typeof chrome !== 'undefined' && !!chrome.storage?.sync
 export default function PopupSettings({ onBack }: { onBack: () => void }) {
   const t = useTranslation();
   const [values, setValues] = useState<number[] | null>(null);
+  const [qualityFactor, setQualityFactor] = useState(DEFAULT_QUALITY_FACTOR);
   const [error, setError] = useState<'saveSettingsError' | 'loadSettingsError' | null>(null);
   const [canScrollDown, setCanScrollDown] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const scrollContentRef = useRef<HTMLDivElement>(null);
   const valuesRef = useRef<number[] | null>(null);
   const qualityFactorRef = useRef(DEFAULT_QUALITY_FACTOR);
+  const pendingQualityFactorRef = useRef(false);
   const pendingRef = useRef<number[] | null>(null);
   const timerRef = useRef<number | undefined>(undefined);
   const hasValues = values !== null;
@@ -45,6 +47,7 @@ export default function PopupSettings({ onBack }: { onBack: () => void }) {
     const pending = pendingRef.current;
     if (!pending) return;
     pendingRef.current = null;
+    pendingQualityFactorRef.current = false;
     const settings = { eqValues: pending, qualityFactor: qualityFactorRef.current };
     try {
       if (hasStorage()) {
@@ -66,11 +69,17 @@ export default function PopupSettings({ onBack }: { onBack: () => void }) {
     let changed = false;
     const applySettings = (settings: unknown) => {
       const next = getEqValues(settings);
-      qualityFactorRef.current = getQualityFactor(settings);
-      if (valuesRef.current && next.every((value, index) => value === valuesRef.current?.[index])) return;
+      const sameValues = valuesRef.current && next.every((value, index) => value === valuesRef.current?.[index]);
+      if (!sameValues || !pendingQualityFactorRef.current) {
+        const nextQualityFactor = getQualityFactor(settings);
+        qualityFactorRef.current = nextQualityFactor;
+        setQualityFactor(nextQualityFactor);
+      }
+      if (sameValues) return;
       if (timerRef.current !== undefined) window.clearTimeout(timerRef.current);
       timerRef.current = undefined;
       pendingRef.current = null;
+      pendingQualityFactorRef.current = false;
       valuesRef.current = next;
       setValues(next);
     };
@@ -128,6 +137,14 @@ export default function PopupSettings({ onBack }: { onBack: () => void }) {
     update(valuesRef.current.map((current, index) => weights[index] ? value * weights[index] : current));
   };
 
+  const updateQualityFactor = (value: number) => {
+    if (!valuesRef.current) return;
+    qualityFactorRef.current = value;
+    pendingQualityFactorRef.current = true;
+    setQualityFactor(value);
+    update(valuesRef.current);
+  };
+
   return (
     <main className="popup-settings">
       <div className="popup-settings-heading">
@@ -135,7 +152,7 @@ export default function PopupSettings({ onBack }: { onBack: () => void }) {
           <ArrowLeft size={18} aria-hidden="true" />
         </button>
         <div><h1>{t('audioSettings')}</h1><p>{t('fineTune')}</p></div>
-        <button className="popup-icon-button" type="button" onClick={() => { qualityFactorRef.current = DEFAULT_QUALITY_FACTOR; update(EQ_FREQUENCIES.map(() => 0)); }} disabled={!values} aria-label={t('resetAudioSettings')} title={t('resetAudioSettings')}>
+        <button className="popup-icon-button" type="button" onClick={() => { qualityFactorRef.current = DEFAULT_QUALITY_FACTOR; pendingQualityFactorRef.current = true; setQualityFactor(DEFAULT_QUALITY_FACTOR); update(EQ_FREQUENCIES.map(() => 0)); }} disabled={!values} aria-label={t('resetAudioSettings')} title={t('resetAudioSettings')}>
           <RotateCcw size={17} aria-hidden="true" />
         </button>
       </div>
@@ -163,6 +180,9 @@ export default function PopupSettings({ onBack }: { onBack: () => void }) {
                     update(next);
                   }} />
                 ))}
+                <div className="popup-quality-factor">
+                  <PopupSlider label={t('qualityFactor')} value={qualityFactor} min={MIN_QUALITY_FACTOR} max={MAX_QUALITY_FACTOR} bipolar={false} valueUnit="" onChange={updateQualityFactor} />
+                </div>
               </div>
             </details>
           </div>
